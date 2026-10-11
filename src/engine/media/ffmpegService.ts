@@ -3,6 +3,7 @@ import type {
   TaskResult,
 } from '../types.ts';
 import { replaceExtension } from '../../utils/fileUtils.ts';
+import { toBlobURL } from '@ffmpeg/util';
 
 const MIME_MAP: Record<string, string> = {
   mp3: 'audio/mpeg',
@@ -40,34 +41,17 @@ class FFmpegService {
 
     this.loadPromise = (async () => {
       try {
-        // Dynamically import @ffmpeg/ffmpeg and @ffmpeg/util to isolate in a separate lazy chunk
+        // Dynamically import @ffmpeg/ffmpeg to isolate in a separate lazy chunk
         const { FFmpeg } = await import('@ffmpeg/ffmpeg');
-        const { toBlobURL } = await import('@ffmpeg/util');
 
         const ffmpeg = new FFmpeg();
         this.ffmpeg = ffmpeg;
 
         onProgress?.(0.25);
 
-        // Attempt 1: Local air-gapped core assets in public/ffmpeg
-        let coreURL: string;
-        let wasmURL: string;
-
-        try {
-          // Check if local public assets are accessible
-          const checkResp = await fetch('/ffmpeg/ffmpeg-core.js', { method: 'HEAD' });
-          if (checkResp.ok) {
-            coreURL = await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript');
-            wasmURL = await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm');
-          } else {
-            throw new Error('Local core not found');
-          }
-        } catch {
-          // Fallback to unpkg CDN if local assets cannot be fetched directly
-          const cdnBase = 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm';
-          coreURL = await toBlobURL(`${cdnBase}/ffmpeg-core.js`, 'text/javascript');
-          wasmURL = await toBlobURL(`${cdnBase}/ffmpeg-core.wasm`, 'application/wasm');
-        }
+        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+        const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+        const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
 
         onProgress?.(0.6);
 

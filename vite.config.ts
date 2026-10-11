@@ -26,15 +26,16 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         clientsClaim: true,
         skipWaiting: true,
         runtimeCaching: [
           {
-            // Cache-First strategy for WebAssembly binaries and ffmpeg core assets
+            // Cache-First strategy for WebAssembly binaries and ffmpeg core assets (including CDN)
             urlPattern: ({ url }) =>
               url.pathname.endsWith('.wasm') ||
-              url.pathname.includes('/ffmpeg/'),
+              url.pathname.includes('/ffmpeg/') ||
+              url.origin.includes('unpkg.com'),
             handler: 'CacheFirst',
             options: {
               cacheName: 'zeroegress-wasm-cache',
