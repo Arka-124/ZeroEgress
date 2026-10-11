@@ -12,7 +12,7 @@ export const App: React.FC = () => {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('filemaster-theme');
+      const saved = localStorage.getItem('zeroegress-theme');
       return saved ? saved === 'dark' : true; // Default dark mode
     }
     return true;
@@ -22,10 +22,10 @@ export const App: React.FC = () => {
     const root = document.documentElement;
     if (isDark) {
       root.classList.add('dark');
-      localStorage.setItem('filemaster-theme', 'dark');
+      localStorage.setItem('zeroegress-theme', 'dark');
     } else {
       root.classList.remove('dark');
-      localStorage.setItem('filemaster-theme', 'light');
+      localStorage.setItem('zeroegress-theme', 'light');
     }
   }, [isDark]);
 
@@ -100,7 +100,7 @@ export const App: React.FC = () => {
       <footer className="border-t border-zinc-900 bg-zinc-950/90 py-6 text-xs text-zinc-400 transition-colors">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[11px]">
           <div className="flex items-center gap-2 text-zinc-400">
-            <span className="font-semibold text-zinc-300">FileMaster</span>
+            <span className="font-semibold text-zinc-300">ZeroEgress</span>
             <span className="text-zinc-600">·</span>
             <span>No telemetry</span>
             <span className="text-zinc-600">·</span>

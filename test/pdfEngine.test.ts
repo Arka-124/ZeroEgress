@@ -10,7 +10,7 @@ describe('PDF Engine operations', () => {
     pdfDoc.addPage([200, 300]);
     pdfDoc.addPage([200, 300]);
     pdfDoc.addPage([200, 300]);
-    pdfDoc.setTitle('FileMaster Test Document');
+    pdfDoc.setTitle('ZeroEgress Test Document');
 
     const pdfBytes = await pdfDoc.save();
     assert.ok(pdfBytes.length > 0, 'PDF bytes generated');
@@ -18,7 +18,7 @@ describe('PDF Engine operations', () => {
     // 2. Load and inspect
     const loadedDoc = await PDFDocument.load(pdfBytes);
     assert.strictEqual(loadedDoc.getPageCount(), 3, 'Page count matches');
-    assert.strictEqual(loadedDoc.getTitle(), 'FileMaster Test Document');
+    assert.strictEqual(loadedDoc.getTitle(), 'ZeroEgress Test Document');
 
     // 3. Extract pages 1 and 3
     const selected = parsePageRange('1, 3', loadedDoc.getPageCount());

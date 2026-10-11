@@ -1,5 +1,5 @@
 /**
- * FileMaster Conversion Engine Interfaces
+ * ZeroEgress Conversion Engine Interfaces
  * Standardized abstraction layer decoupling conversion logic from UI components.
  * This architecture allows transparent swapping between pure browser client-side execution
  * and future native runtimes (Tauri / Rust backend).

@@ -1,4 +1,4 @@
-# FileMaster — Air-Gapped Privacy-First Web Utility Suite
+# ZeroEgress — Air-Gapped Privacy-First Web Utility Suite
 
 > **Air-Gapped: 100% Client-Side (Zero Server Uploads)**  
 > Modern, utilitarian, distraction-free file utility suite inspired by Linear, Raycast, and Apple system utilities.
@@ -16,7 +16,7 @@
 
 ## 2. Decoupled Engine Layer Architecture
 
-Conversions are **never** hardcoded directly inside UI components. FileMaster is architected around a decoupled abstraction layer:
+Conversions are **never** hardcoded directly inside UI components. ZeroEgress is architected around a decoupled abstraction layer:
 
 ```
 src/

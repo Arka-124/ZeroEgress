@@ -45,7 +45,7 @@ export function downloadBlob(blob: Blob, filename: string): void {
  */
 export async function downloadZip(
   files: { name: string; blob: Blob }[],
-  zipFilename: string = 'filemaster-archive.zip'
+  zipFilename: string = 'zeroegress-archive.zip'
 ): Promise<void> {
   const zip = new JSZip();
   files.forEach((f) => {

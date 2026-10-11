@@ -10,8 +10,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'FileMaster - Air-Gapped Utility Suite',
-        short_name: 'FileMaster',
+        name: 'ZeroEgress - Air-Gapped Utility Suite',
+        short_name: 'ZeroEgress',
         description: '100% Client-Side Private File Utilities: Image Converter, PDF Tools, and more.',
         theme_color: '#09090b',
         background_color: '#09090b',

@@ -182,7 +182,7 @@ export const ImageConverter: React.FC = () => {
       blob: i.resultBlob!,
     }));
 
-    await downloadZip(filesToZip, `filemaster_converted_${Date.now()}.zip`);
+    await downloadZip(filesToZip, `zeroegress_converted_${Date.now()}.zip`);
   };
 
   // Remove single item
