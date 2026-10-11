@@ -3,10 +3,74 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="canonical" href="https://zeroegress.app/" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Air-Gapped: 100% Client-Side Private Web Utility Suite. Zero server uploads, instant image conversions, and PDF manipulation." />
+    <title>ZeroEgress — Air-Gapped 100% Client-Side File Utility Suite</title>
+    <meta
+      name="description"
+      content="Air-gapped, zero-server-upload file utilities running 100% in your browser. Instant image converter (AVIF/WebP), PDF split & merge, deep EXIF scrubber, structured data converter, and WebAssembly media transcoder."
+    />
+    <meta
+      name="keywords"
+      content="client-side file converter, offline PWA, air-gapped utility, image converter, webp avif converter, pdf split merge, exif stripper, json csv yaml converter, ffmpeg wasm media converter, privacy first"
+    />
+    <meta name="author" content="ZeroEgress" />
     <meta name="theme-color" content="#09090b" />
-    <title>ZeroEgress — Air-Gapped Privacy-First File Utilities</title>
+    <meta name="color-scheme" content="dark light" />
+    <meta name="application-name" content="ZeroEgress" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ZeroEgress" />
+
+    <!-- OpenGraph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://zeroegress.app/" />
+    <meta property="og:title" content="ZeroEgress — Air-Gapped 100% Client-Side File Utilities" />
+    <meta
+      property="og:description"
+      content="Private, air-gapped web utility suite. Zero server uploads, zero telemetry, instant image conversions, PDF manipulation, EXIF stripping, and WebAssembly media transcoding."
+    />
+    <meta property="og:image" content="https://zeroegress.app/favicon.svg" />
+    <meta property="og:site_name" content="ZeroEgress" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://zeroegress.app/" />
+    <meta name="twitter:title" content="ZeroEgress — Air-Gapped Client-Side File Utilities" />
+    <meta
+      name="twitter:description"
+      content="100% Client-Side Web Utilities with Zero Server Uploads. Image converter, PDF tools, EXIF stripper, JSON/CSV/YAML formatter, and FFmpeg media transcoder."
+    />
+    <meta name="twitter:image" content="https://zeroegress.app/favicon.svg" />
+
+    <!-- Structured Data (JSON-LD) for Search Engines -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "ZeroEgress",
+        "url": "https://zeroegress.app/",
+        "description": "Air-Gapped: 100% Client-Side Private Web Utility Suite. Zero server uploads.",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "All",
+        "browserRequirements": "Requires WebAssembly, HTML5 Canvas, and modern browser APIs.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "Instant Image Converter (PNG, JPEG, WebP, AVIF) with quality tuning",
+          "Pure Client-Side PDF Split and Merge without file size limits",
+          "Deep EXIF and Sensitive Metadata Stripper (GPS, camera tags, author)",
+          "Structured Data Converter (JSON ↔ CSV ↔ YAML) with delimiter controls",
+          "Cryptographic Checksum Hasher (SHA-256, SHA-512, MD5) with live comparator",
+          "WebAssembly Media Studio (Audio Extraction, Transcoding, and Lossless Trimming)",
+          "100% Air-Gapped Execution with Zero Server Uploads and Offline PWA Support"
+        ]
+      }
+    </script>
   </head>
   <body class="bg-zinc-950 text-zinc-100 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen">
     <div id="root"></div>

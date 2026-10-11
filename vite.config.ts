@@ -26,6 +26,78 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
+        clientsClaim: true,
+        skipWaiting: true,
+        runtimeCaching: [
+          {
+            // Cache-First strategy for WebAssembly binaries and ffmpeg core assets
+            urlPattern: ({ url }) =>
+              url.pathname.endsWith('.wasm') ||
+              url.pathname.includes('/ffmpeg/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'zeroegress-wasm-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Cache-First strategy for Web Workers
+            urlPattern: ({ request, url }) =>
+              request.destination === 'worker' ||
+              url.pathname.includes('dataWorker') ||
+              url.pathname.includes('worker'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'zeroegress-workers-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Cache-First strategy for typography and fonts
+            urlPattern: ({ request, url }) =>
+              request.destination === 'font' ||
+              /\.(?:woff|woff2|eot|ttf|otf)$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'zeroegress-fonts-cache',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Stale-While-Revalidate strategy for core UI script and style bundles
+            urlPattern: ({ request, url }) =>
+              request.destination === 'script' ||
+              request.destination === 'style' ||
+              /\.(?:js|css)$/.test(url.pathname),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'zeroegress-bundles-cache',
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+            },
+          },
+        ],
       },
     }),
   ],
