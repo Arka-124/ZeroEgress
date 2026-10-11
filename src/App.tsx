@@ -137,31 +137,31 @@ export const App: React.FC = () => {
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 space-y-8">
         {/* Tool Switcher Navigation (Linear / Raycast utilitarian tab bar) */}
-        <div className="flex items-center justify-center w-full">
-          <div className="inline-flex flex-wrap items-center justify-center p-1 rounded-xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm gap-1 shadow-lg">
+        <div className="flex items-center justify-center w-full overflow-x-auto py-1">
+          <div className="inline-flex flex-nowrap items-center p-1 rounded-xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm gap-1 shadow-lg shrink-0">
             <button
               type="button"
               onClick={() => setActiveTool('image')}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTool === 'image'
                   ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
               }`}
             >
-              <ImageIcon className="w-4 h-4" />
+              <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Image Converter</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTool('pdf')}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTool === 'pdf'
                   ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
               }`}
             >
-              <FileText className="w-4 h-4" />
+              <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>PDF & Vector Redact</span>
               <span
                 className={`text-[9px] font-mono px-1 py-0.2 rounded transition-colors font-bold ${
@@ -177,16 +177,16 @@ export const App: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTool('metadata')}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTool === 'metadata'
                   ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
               }`}
             >
-              <ShieldAlert className="w-4 h-4 text-emerald-400" />
+              <ShieldAlert className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
               <span>Metadata Stripper</span>
               <span
-                className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition-colors ${
+                className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors ${
                   activeTool === 'metadata'
                     ? 'bg-zinc-300 text-zinc-950 font-semibold'
                     : 'bg-zinc-800 text-zinc-400'
@@ -199,57 +199,57 @@ export const App: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTool('data')}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTool === 'data'
                   ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
               }`}
             >
-              <Code2 className="w-4 h-4 text-sky-400" />
+              <Code2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400" />
               <span>Data & Hashes</span>
               <span
-                className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition-colors ${
+                className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors ${
                   activeTool === 'data'
                     ? 'bg-zinc-300 text-zinc-950 font-semibold'
                     : 'bg-zinc-800 text-zinc-400'
                 }`}
               >
-                JSON / CSV / SHA
+                JSON / SHA
               </span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTool('media')}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTool === 'media'
                   ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
               }`}
             >
-              <Film className="w-4 h-4 text-purple-400" />
+              <Film className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" />
               <span>Media Studio</span>
               <span
-                className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition-colors ${
+                className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors ${
                   activeTool === 'media'
                     ? 'bg-zinc-300 text-zinc-950 font-semibold'
                     : 'bg-zinc-800 text-zinc-400'
                 }`}
               >
-                FFmpeg WASM
+                WASM
               </span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTool('watchfolders')}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTool === 'watchfolders'
                   ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
               }`}
             >
-              <FolderSync className="w-4 h-4 text-emerald-400" />
+              <FolderSync className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
               <span>Watch Folders</span>
               <span
                 className={`text-[9px] font-mono px-1.5 py-0.2 rounded transition-colors font-bold ${
