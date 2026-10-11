@@ -23,6 +23,22 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ZeroEgress" />
 
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('zeroegress-theme');
+          var isDark = saved ? saved === 'dark' : true;
+          if (!isDark) {
+            document.documentElement.classList.remove('dark');
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', '#f8fafc');
+          } else {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- OpenGraph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://zeroegress.app/" />

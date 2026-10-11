@@ -49,12 +49,15 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     const root = document.documentElement;
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
     if (isDark) {
       root.classList.add('dark');
       localStorage.setItem('zeroegress-theme', 'dark');
+      if (themeColorMeta) themeColorMeta.setAttribute('content', '#09090b');
     } else {
       root.classList.remove('dark');
       localStorage.setItem('zeroegress-theme', 'light');
+      if (themeColorMeta) themeColorMeta.setAttribute('content', '#f8fafc');
     }
   }, [isDark]);
 

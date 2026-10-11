@@ -310,7 +310,7 @@ export const ImageConverter: React.FC = () => {
                   disabled={!isSupported}
                   className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-zinc-100 text-zinc-950 border-white shadow-sm'
+                      ? 'bg-zinc-100 text-zinc-950 border-zinc-100 shadow-sm'
                       : 'bg-zinc-950/60 border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'
                   } ${!isSupported ? 'opacity-40 cursor-not-allowed' : ''}`}
                 >

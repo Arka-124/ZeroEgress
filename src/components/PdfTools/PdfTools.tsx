@@ -781,7 +781,7 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
                       onClick={() => setSplitMode('extract')}
                       className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                         splitMode === 'extract'
-                          ? 'bg-zinc-100 text-zinc-950 border-white shadow-sm'
+                          ? 'bg-zinc-100 text-zinc-950 border-zinc-100 shadow-sm'
                           : 'bg-zinc-950/60 border-zinc-800 text-zinc-300 hover:border-zinc-700'
                       }`}
                     >
@@ -808,7 +808,7 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
                       onClick={() => setSplitMode('separate-all')}
                       className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                         splitMode === 'separate-all'
-                          ? 'bg-zinc-100 text-zinc-950 border-white shadow-sm'
+                          ? 'bg-zinc-100 text-zinc-950 border-zinc-100 shadow-sm'
                           : 'bg-zinc-950/60 border-zinc-800 text-zinc-300 hover:border-zinc-700'
                       }`}
                     >

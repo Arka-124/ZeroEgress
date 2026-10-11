@@ -28,13 +28,13 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantStyles = {
     primary:
-      'bg-zinc-100 text-zinc-950 hover:bg-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white shadow-sm font-semibold',
+      'bg-zinc-100 text-zinc-950 hover:opacity-90 shadow-sm font-semibold',
     secondary:
-      'bg-zinc-900 text-zinc-200 hover:bg-zinc-800 border border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:border-zinc-800 dark:hover:bg-zinc-800 dark:hover:border-zinc-700',
+      'bg-zinc-900 text-zinc-200 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700',
     outline:
-      'bg-transparent text-zinc-300 hover:bg-zinc-900/60 border border-zinc-800 dark:border-zinc-800 dark:hover:border-zinc-700 dark:text-zinc-300',
+      'bg-transparent text-zinc-300 hover:bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700',
     ghost:
-      'bg-transparent text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/50 dark:text-zinc-400 dark:hover:text-zinc-100',
+      'bg-transparent text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/50',
     danger:
       'bg-red-950/40 text-red-400 border border-red-900/50 hover:bg-red-900/50 hover:border-red-800/80',
   }[variant];

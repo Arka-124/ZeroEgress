@@ -345,7 +345,7 @@ export const PrivacyInfo: React.FC<PrivacyInfoProps> = ({ isOpen, onClose }) => 
               type="button"
               onClick={runOfflineVerificationTest}
               disabled={isTestingOffline}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 font-semibold text-xs hover:bg-white transition-colors cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 font-semibold text-xs hover:opacity-90 transition-colors cursor-pointer disabled:opacity-50"
             >
               {isTestingOffline ? (
                 <>
