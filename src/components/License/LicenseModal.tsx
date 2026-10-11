@@ -19,11 +19,6 @@ import {
   clearStoredLicense,
 } from '../../engine/license/licenseVerifier.ts';
 import {
-  SAMPLE_ENTERPRISE_KEY,
-  SAMPLE_EXPIRED_KEY,
-  SAMPLE_TAMPERED_KEY,
-} from '../../engine/license/licenseGenerator.ts';
-import {
   generateComplianceReport,
   downloadComplianceReportJson,
   downloadComplianceReportHtml,
@@ -86,11 +81,6 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
     setKeyInput('');
     setNotification('License deactivated. App running in standard Air-Gap mode.');
     onLicenseChanged?.();
-  };
-
-  const handleLoadSample = (sampleKey: string) => {
-    setKeyInput(sampleKey);
-    setNotification('Sample key populated. Click "Verify & Activate" to test offline math.');
   };
 
   const handleExportJson = () => {
@@ -281,36 +271,12 @@ export const LicenseModal: React.FC<LicenseModalProps> = ({
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleLoadSample(SAMPLE_ENTERPRISE_KEY)}
-                className="px-2.5 py-1 text-[11px] font-mono rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
-              >
-                + Enterprise Perpetual Key
-              </button>
-              <button
-                type="button"
-                onClick={() => handleLoadSample(SAMPLE_EXPIRED_KEY)}
-                className="px-2.5 py-1 text-[11px] font-mono rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
-              >
-                + Test Expired Key
-              </button>
-              <button
-                type="button"
-                onClick={() => handleLoadSample(SAMPLE_TAMPERED_KEY)}
-                className="px-2.5 py-1 text-[11px] font-mono rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
-              >
-                + Test Tampered Key
-              </button>
-            </div>
-
+          <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
               onClick={handleVerifyAndActivate}
               disabled={isVerifying || !keyInput.trim()}
-              className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 disabled:opacity-50 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+              className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 hover:opacity-90 text-zinc-950 disabled:opacity-50 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               {isVerifying ? (
                 <>
