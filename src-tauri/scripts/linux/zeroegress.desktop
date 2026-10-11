@@ -1,0 +1,15 @@
+[Desktop Entry]
+Name=ZeroEgress
+Comment=Air-Gapped Privacy-First Client-Side Utility Suite
+Exec=zeroegress %U
+Icon=zeroegress
+Terminal=false
+Type=Application
+Categories=Utility;Graphics;AudioVideo;
+MimeType=image/*;application/pdf;audio/*;video/*;text/csv;application/json;text/yaml;
+StartupWMClass=zeroegress
+Actions=Convert;
+
+[Desktop Action Convert]
+Name=Open in ZeroEgress
+Exec=zeroegress %U

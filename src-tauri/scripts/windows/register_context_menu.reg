@@ -1,0 +1,22 @@
+Windows Registry Editor Version 5.00
+
+; =========================================================================
+; ZeroEgress Windows Shell Context Menu Integration
+; Adds "Open in ZeroEgress" to right-click menu for all files and directories.
+; 100% Client-Side Privacy: Passes path directly to local executable.
+; =========================================================================
+
+[HKEY_CLASSES_ROOT\*\shell\ZeroEgress]
+@="Open in ZeroEgress"
+"Icon"="\"%LOCALAPPDATA%\\ZeroEgress\\ZeroEgress.exe\",0"
+
+[HKEY_CLASSES_ROOT\*\shell\ZeroEgress\command]
+@="\"%LOCALAPPDATA%\\ZeroEgress\\ZeroEgress.exe\" \"%1\""
+
+; Add for Directory Backgrounds (drag-and-drop folder support)
+[HKEY_CLASSES_ROOT\Directory\shell\ZeroEgress]
+@="Open in ZeroEgress"
+"Icon"="\"%LOCALAPPDATA%\\ZeroEgress\\ZeroEgress.exe\",0"
+
+[HKEY_CLASSES_ROOT\Directory\shell\ZeroEgress\command]
+@="\"%LOCALAPPDATA%\\ZeroEgress\\ZeroEgress.exe\" \"%1\""

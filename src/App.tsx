@@ -6,6 +6,7 @@ import { PdfTools } from './components/PdfTools/PdfTools';
 import { MetadataScrubber } from './components/MetadataScrubber/MetadataScrubber';
 import { DataTools } from './components/DataTools/DataTools';
 import { PrivacyInfo } from './components/PrivacyInfo';
+import { engine } from './engine';
 
 // Lazy-load MediaTools to keep initial bundle small and defer FFmpeg WebAssembly core
 const MediaTools = React.lazy(() => import('./components/MediaTools/MediaTools'));
@@ -221,7 +222,7 @@ export const App: React.FC = () => {
           <div className="hidden md:flex items-center gap-3 text-xs text-zinc-400 font-mono">
             <span className="flex items-center gap-1.5 text-zinc-300">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Engine: Browser WebAssembly
+              Engine: {engine.name.includes('Tauri') ? 'Tauri Rust Native' : 'Browser WebAssembly'}
             </span>
             <span className="text-zinc-600">·</span>
             <button

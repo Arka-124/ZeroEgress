@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+; =========================================================================
+; ZeroEgress Windows Shell Context Menu Removal Script
+; =========================================================================
+
+[-HKEY_CLASSES_ROOT\*\shell\ZeroEgress]
+[-HKEY_CLASSES_ROOT\Directory\shell\ZeroEgress]
