@@ -6,6 +6,7 @@ import type { LicenseVerificationResult } from '../engine/license/types.ts';
 export interface HeaderProps {
   onOpenPrivacyInfo?: () => void;
   onOpenLicense?: () => void;
+  onOpenArchitecture?: () => void;
   isDark: boolean;
   onToggleTheme: () => void;
 }
@@ -13,6 +14,7 @@ export interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   onOpenPrivacyInfo,
   onOpenLicense,
+  onOpenArchitecture,
   isDark,
   onToggleTheme,
 }) => {
@@ -124,10 +126,11 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Architecture Dialog Trigger */}
           <button
             type="button"
-            onClick={onOpenPrivacyInfo}
-            className="hidden lg:flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-zinc-200 transition-colors rounded hover:bg-zinc-900"
+            onClick={onOpenArchitecture}
+            className="hidden lg:flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-zinc-200 transition-colors rounded hover:bg-zinc-900 cursor-pointer"
+            title="View system architecture and technical blueprint"
           >
-            <FileCode2 className="w-3.5 h-3.5" />
+            <FileCode2 className="w-3.5 h-3.5 text-sky-400" />
             <span>Architecture</span>
           </button>
 

@@ -9,6 +9,7 @@ import {
   Film,
   FolderSync,
   Key,
+  FileCode2,
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { ImageConverter } from './components/ImageConverter/ImageConverter';
@@ -18,6 +19,7 @@ import { DataTools } from './components/DataTools/DataTools';
 import { WatchFolders } from './components/WatchFolders/WatchFolders';
 import { PrivacyInfo } from './components/PrivacyInfo';
 import { LicenseModal } from './components/License/LicenseModal';
+import { ArchitectureModal } from './components/Architecture/ArchitectureModal';
 
 // Lazy-load MediaTools to keep initial bundle small and defer FFmpeg WebAssembly core
 const MediaTools = React.lazy(() => import('./components/MediaTools/MediaTools'));
@@ -37,6 +39,7 @@ export const App: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ActiveTool>('image');
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isLicenseOpen, setIsLicenseOpen] = useState(false);
+  const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
   const [isWindowDragging, setIsWindowDragging] = useState(false);
 
   const [isDark, setIsDark] = useState(() => {
@@ -135,6 +138,7 @@ export const App: React.FC = () => {
         onToggleTheme={toggleTheme}
         onOpenPrivacyInfo={() => setIsPrivacyOpen(true)}
         onOpenLicense={() => setIsLicenseOpen(true)}
+        onOpenArchitecture={() => setIsArchitectureOpen(true)}
       />
 
       {/* Main Container */}
@@ -309,28 +313,42 @@ export const App: React.FC = () => {
           <div className="flex items-center gap-4 text-zinc-400">
             <button
               type="button"
-              onClick={() => setIsLicenseOpen(true)}
-              className="hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
+              onClick={() => setIsArchitectureOpen(true)}
+              className="hover:text-sky-300 transition-colors flex items-center gap-1 cursor-pointer"
+              title="View full system architecture & technical blueprint"
             >
-              <Key className="w-3 h-3 text-amber-400" />
-              <span>Ed25519 Licensing & Compliance</span>
+              <FileCode2 className="w-3 h-3 text-sky-400" />
+              <span>Architecture Blueprint</span>
             </button>
             <span className="text-zinc-700">|</span>
             <button
               type="button"
               onClick={() => setIsPrivacyOpen(true)}
-              className="hover:text-zinc-200 transition-colors flex items-center gap-1 cursor-pointer"
+              className="hover:text-emerald-300 transition-colors flex items-center gap-1 cursor-pointer"
+              title="View air-gap network audit & memory diagnostics"
             >
               <Shield className="w-3 h-3 text-emerald-400" />
-              <span>Air-Gap Verification</span>
+              <span>Air-Gap Diagnostics</span>
             </button>
             <span className="text-zinc-700">|</span>
-            <span className="text-zinc-500">Tauri / Rust Bridge Ready</span>
+            <button
+              type="button"
+              onClick={() => setIsLicenseOpen(true)}
+              className="hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
+              title="View offline Ed25519 cryptographic licensing & compliance"
+            >
+              <Key className="w-3 h-3 text-amber-400" />
+              <span>Offline Licensing</span>
+            </button>
           </div>
         </div>
       </footer>
 
       {/* Modals */}
+      <ArchitectureModal
+        isOpen={isArchitectureOpen}
+        onClose={() => setIsArchitectureOpen(false)}
+      />
       <PrivacyInfo isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} />
       <LicenseModal
         isOpen={isLicenseOpen}
