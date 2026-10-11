@@ -42,4 +42,29 @@ describe('Tauri Desktop Adapter & Native Shell Integration', () => {
     assert.strictEqual(engine.isAirGapped, true);
     assert.strictEqual(typeof engine.name, 'string');
   });
+
+  it('exposes pro methods for vector redaction, OCR, and watch folders', async () => {
+    const desktopAdapter = new DesktopAdapter();
+    assert.strictEqual(typeof desktopAdapter.redactPdfVector, 'function');
+    assert.strictEqual(typeof desktopAdapter.ocrPdf, 'function');
+    assert.strictEqual(typeof desktopAdapter.startWatchFolder, 'function');
+
+    // Test watch folder initialization
+    const watcher = await desktopAdapter.startWatchFolder({
+      id: 'watch_test',
+      name: 'Test Watcher',
+      inputPath: '/tmp/input',
+      outputPath: '/tmp/output',
+      targetFormat: 'webp',
+      isActive: true,
+      filesProcessed: 0,
+    });
+
+    assert.ok(watcher.id);
+    assert.strictEqual(typeof watcher.stop, 'function');
+    watcher.stop();
+
+    const statuses = await desktopAdapter.getWatchFolderStatuses();
+    assert.ok(Array.isArray(statuses));
+  });
 });

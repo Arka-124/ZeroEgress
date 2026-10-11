@@ -20,6 +20,9 @@ image = { version = "0.25", default-features = false, features = ["png", "jpeg",
 lopdf = "0.33"
 sha2 = "0.10"
 md-5 = "0.10"
+ed25519-dalek = { version = "2.1", default-features = false, features = ["std", "fast"] }
+base64 = "0.22"
+notify = "6.1"
 
 [profile.release]
 opt-level = "z"     # Optimize for size (< 20 MB installer)

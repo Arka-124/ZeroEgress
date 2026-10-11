@@ -1,29 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { ImageIcon, FileText, Shield, ShieldAlert, UploadCloud, Code2, Film } from 'lucide-react';
+import {
+  ImageIcon,
+  FileText,
+  Shield,
+  ShieldAlert,
+  UploadCloud,
+  Code2,
+  Film,
+  FolderSync,
+  Key,
+} from 'lucide-react';
 import { Header } from './components/Header';
 import { ImageConverter } from './components/ImageConverter/ImageConverter';
 import { PdfTools } from './components/PdfTools/PdfTools';
 import { MetadataScrubber } from './components/MetadataScrubber/MetadataScrubber';
 import { DataTools } from './components/DataTools/DataTools';
+import { WatchFolders } from './components/WatchFolders/WatchFolders';
 import { PrivacyInfo } from './components/PrivacyInfo';
+import { LicenseModal } from './components/License/LicenseModal';
 import { engine } from './engine';
 
 // Lazy-load MediaTools to keep initial bundle small and defer FFmpeg WebAssembly core
 const MediaTools = React.lazy(() => import('./components/MediaTools/MediaTools'));
 
-type ActiveTool = 'image' | 'pdf' | 'metadata' | 'data' | 'media';
+type ActiveTool = 'image' | 'pdf' | 'metadata' | 'data' | 'media' | 'watchfolders';
 
 const activeToolTitles: Record<ActiveTool, string> = {
   image: 'Instant Image Converter',
-  pdf: 'PDF Split & Merge',
+  pdf: 'PDF Split, Merge & Vector Redaction',
   metadata: 'Metadata Stripper',
   data: 'Data & Hashes',
   media: 'Media Studio & Transcoder',
+  watchfolders: 'Automated Watch Folders Pipeline',
 };
 
 export const App: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ActiveTool>('image');
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [isLicenseOpen, setIsLicenseOpen] = useState(false);
   const [isWindowDragging, setIsWindowDragging] = useState(false);
 
   const [isDark, setIsDark] = useState(() => {
@@ -118,6 +132,7 @@ export const App: React.FC = () => {
         isDark={isDark}
         onToggleTheme={toggleTheme}
         onOpenPrivacyInfo={() => setIsPrivacyOpen(true)}
+        onOpenLicense={() => setIsLicenseOpen(true)}
       />
 
       {/* Main Container */}
@@ -148,7 +163,16 @@ export const App: React.FC = () => {
               }`}
             >
               <FileText className="w-4 h-4" />
-              <span>PDF Split & Merge</span>
+              <span>PDF & Vector Redact</span>
+              <span
+                className={`text-[9px] font-mono px-1 py-0.2 rounded transition-colors font-bold ${
+                  activeTool === 'pdf'
+                    ? 'bg-zinc-300 text-zinc-950'
+                    : 'bg-zinc-800 text-zinc-300'
+                }`}
+              >
+                PRO
+              </span>
             </button>
 
             <button
@@ -216,6 +240,28 @@ export const App: React.FC = () => {
                 FFmpeg WASM
               </span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTool('watchfolders')}
+              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer ${
+                activeTool === 'watchfolders'
+                  ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+              }`}
+            >
+              <FolderSync className="w-4 h-4 text-emerald-400" />
+              <span>Watch Folders</span>
+              <span
+                className={`text-[9px] font-mono px-1.5 py-0.2 rounded transition-colors font-bold ${
+                  activeTool === 'watchfolders'
+                    ? 'bg-emerald-950 text-emerald-300'
+                    : 'bg-zinc-800 text-emerald-400'
+                }`}
+              >
+                DAEMON
+              </span>
+            </button>
           </div>
 
           {/* Quick Architecture Callout */}
@@ -238,9 +284,12 @@ export const App: React.FC = () => {
         {/* Active Tool View */}
         <div className="rounded-2xl border border-zinc-800/80 bg-zinc-950/40 p-6 md:p-8 backdrop-blur-sm shadow-xl">
           {activeTool === 'image' && <ImageConverter />}
-          {activeTool === 'pdf' && <PdfTools />}
+          {activeTool === 'pdf' && <PdfTools onOpenLicense={() => setIsLicenseOpen(true)} />}
           {activeTool === 'metadata' && <MetadataScrubber />}
           {activeTool === 'data' && <DataTools />}
+          {activeTool === 'watchfolders' && (
+            <WatchFolders onOpenLicense={() => setIsLicenseOpen(true)} />
+          )}
           {activeTool === 'media' && (
             <React.Suspense
               fallback={
@@ -274,6 +323,15 @@ export const App: React.FC = () => {
           <div className="flex items-center gap-4 text-zinc-400">
             <button
               type="button"
+              onClick={() => setIsLicenseOpen(true)}
+              className="hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <Key className="w-3 h-3 text-amber-400" />
+              <span>Ed25519 Licensing & Compliance</span>
+            </button>
+            <span className="text-zinc-700">|</span>
+            <button
+              type="button"
               onClick={() => setIsPrivacyOpen(true)}
               className="hover:text-zinc-200 transition-colors flex items-center gap-1 cursor-pointer"
             >
@@ -286,8 +344,15 @@ export const App: React.FC = () => {
         </div>
       </footer>
 
-      {/* Privacy and Architecture Sheet Modal */}
+      {/* Modals */}
       <PrivacyInfo isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} />
+      <LicenseModal
+        isOpen={isLicenseOpen}
+        onClose={() => setIsLicenseOpen(false)}
+        onLicenseChanged={() => {
+          window.dispatchEvent(new CustomEvent('zeroegress:license-updated'));
+        }}
+      />
     </div>
   );
 };

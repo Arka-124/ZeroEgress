@@ -2,7 +2,7 @@
  * ZeroEgress Conversion Engine Interfaces
  * Standardized abstraction layer decoupling conversion logic from UI components.
  * This architecture allows transparent swapping between pure browser client-side execution
- * and future native runtimes (Tauri / Rust backend).
+ * and native runtimes (Tauri / Rust backend).
  */
 
 export type TaskType =
@@ -10,6 +10,8 @@ export type TaskType =
   | 'pdf-merge'
   | 'pdf-split'
   | 'pdf-inspect'
+  | 'pdf-redact'
+  | 'pdf-ocr'
   | 'metadata-inspect'
   | 'metadata-strip'
   | 'media-convert';
@@ -65,6 +67,50 @@ export interface PdfInspectTask extends BaseTask {
   type: 'pdf-inspect';
   file: File | Blob;
   fileName: string;
+}
+
+export interface PdfRedactOptions {
+  searchTerms: string[];
+  caseSensitive?: boolean;
+  redactVectors?: boolean;
+  drawRedactionBoxes?: boolean;
+}
+
+export interface PdfRedactTask extends BaseTask {
+  type: 'pdf-redact';
+  file: File | Blob;
+  fileName: string;
+  options: PdfRedactOptions;
+}
+
+export interface PdfOcrOptions {
+  language: string; // e.g. 'eng'
+  preserveImages?: boolean;
+}
+
+export interface PdfOcrTask extends BaseTask {
+  type: 'pdf-ocr';
+  file: File | Blob;
+  fileName: string;
+  options: PdfOcrOptions;
+}
+
+export interface WatchFolderConfig {
+  id: string;
+  name: string;
+  inputPath: string;
+  outputPath: string;
+  targetFormat: string; // e.g. 'webp', 'mp3', 'strip-metadata', 'redact-pdf'
+  isActive: boolean;
+  filesProcessed: number;
+  lastProcessedAt?: number;
+}
+
+export interface WatchFolderEvent {
+  timestamp: number;
+  fileName: string;
+  status: 'processed' | 'error' | 'detected';
+  details: string;
 }
 
 export type MetadataCategory = 'gps' | 'camera' | 'timestamp' | 'software' | 'document' | 'other';
@@ -145,6 +191,8 @@ export type ConversionTask =
   | PdfMergeTask
   | PdfSplitTask
   | PdfInspectTask
+  | PdfRedactTask
+  | PdfOcrTask
   | MetadataInspectTask
   | MetadataStripTask
   | MediaConvertTask;
@@ -200,6 +248,8 @@ export interface EngineAdapter {
   mergePdfs(task: PdfMergeTask, onProgress?: (ratio: number) => void): Promise<TaskResult<Blob>>;
   splitPdf(task: PdfSplitTask, onProgress?: (ratio: number) => void): Promise<TaskResult<Blob | Blob[]>>;
   inspectPdf(task: PdfInspectTask): Promise<TaskResult<PdfMetadata>>;
+  redactPdfVector(task: PdfRedactTask, onProgress?: (ratio: number) => void): Promise<TaskResult<Blob>>;
+  ocrPdf(task: PdfOcrTask, onProgress?: (ratio: number) => void): Promise<TaskResult<Blob>>;
   inspectMetadata(task: MetadataInspectTask): Promise<TaskResult<MetadataInspectionReport>>;
   stripMetadata(task: MetadataStripTask, onProgress?: (ratio: number) => void): Promise<TaskResult<Blob>>;
   convertData(
@@ -222,5 +272,9 @@ export interface EngineAdapter {
   isMediaEngineLoaded?(): boolean;
   loadMediaEngine?(onProgress?: (ratio: number) => void): Promise<void>;
   isFormatSupported(format: ImageTargetFormat): Promise<boolean>;
+  startWatchFolder?(
+    config: WatchFolderConfig,
+    onEvent?: (event: WatchFolderEvent) => void
+  ): Promise<{ id: string; stop: () => void }>;
+  getWatchFolderStatuses?(): Promise<WatchFolderConfig[]>;
 }
-

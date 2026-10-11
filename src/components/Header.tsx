@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Moon, Sun, Wifi, WifiOff, FileCode2, Layers } from 'lucide-react';
+import { ShieldCheck, Moon, Sun, Wifi, WifiOff, FileCode2, Layers, Key } from 'lucide-react';
+import { getStoredLicense } from '../engine/license/licenseVerifier.ts';
+import type { LicenseVerificationResult } from '../engine/license/types.ts';
 
 export interface HeaderProps {
   onOpenPrivacyInfo?: () => void;
+  onOpenLicense?: () => void;
   isDark: boolean;
   onToggleTheme: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenPrivacyInfo,
+  onOpenLicense,
   isDark,
   onToggleTheme,
 }) => {
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
+  const [license, setLicense] = useState<LicenseVerificationResult | null>(null);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -23,11 +28,21 @@ export const Header: React.FC<HeaderProps> = ({
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    const refreshLic = () => {
+      getStoredLicense().then(setLicense).catch(() => {});
+    };
+    refreshLic();
+
+    window.addEventListener('zeroegress:license-updated', refreshLic);
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('zeroegress:license-updated', refreshLic);
     };
   }, []);
+
+  const tier = license?.isValid && license.payload?.tier ? license.payload.tier.toUpperCase() : null;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md transition-colors">
@@ -66,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Right: Offline / PWA status & Theme Toggle */}
+        {/* Right: Actions, License & Theme Toggle */}
         <div className="flex items-center gap-2">
           {/* Offline / Online Network Indicator */}
           <div
@@ -90,21 +105,27 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Privacy Dialog Trigger (Mobile) */}
+          {/* License & Compliance Button */}
           <button
             type="button"
-            onClick={onOpenPrivacyInfo}
-            className="sm:hidden p-1.5 rounded border border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200"
-            title="Privacy Verification"
+            onClick={onOpenLicense}
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-900 text-zinc-300 hover:text-zinc-100 transition-colors cursor-pointer"
+            title="View offline Ed25519 cryptographic license status and compliance audit report"
           >
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <Key className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline font-mono text-[11px]">
+              {tier ? `${tier}` : 'License'}
+            </span>
+            {tier && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            )}
           </button>
 
-          {/* Architecture / Source Link */}
+          {/* Architecture Dialog Trigger */}
           <button
             type="button"
             onClick={onOpenPrivacyInfo}
-            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 text-xs text-zinc-400 hover:text-zinc-200 transition-colors rounded hover:bg-zinc-900"
+            className="hidden lg:flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-zinc-200 transition-colors rounded hover:bg-zinc-900"
           >
             <FileCode2 className="w-3.5 h-3.5" />
             <span>Architecture</span>

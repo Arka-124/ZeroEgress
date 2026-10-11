@@ -10,19 +10,24 @@ import type {
   PdfMetadata,
   PdfMergeTask,
   PdfSplitTask,
+  PdfRedactTask,
+  PdfOcrTask,
+  WatchFolderConfig,
+  WatchFolderEvent,
   TaskResult,
   DataFormat,
   DataOptions,
   HashAlgorithm,
   MediaConvertTask,
   MediaOptions,
-} from '../types';
+} from '../types.ts';
 import { replaceExtension, parsePageRange } from '../../utils/fileUtils.ts';
 import { parseFileMetadata } from '../metadata/exifParser.ts';
 import { stripMetadataFromBuffer } from '../metadata/binaryStripper.ts';
 import { convertData as engineConvertData } from '../data/dataConverter.ts';
 import { md5 } from '../crypto/md5.ts';
 import { ffmpegService } from '../media/ffmpegService.ts';
+import { redactPdfVector as runRedactPdfVector, ocrPdf as runOcrPdf } from '../pdf/pdfProOperations.ts';
 
 export class BrowserAdapter implements EngineAdapter {
   readonly name = 'Browser WebAssembly & Canvas Engine';
@@ -424,6 +429,74 @@ export class BrowserAdapter implements EngineAdapter {
   }
 
   /**
+   * True Vector PDF Redaction (client-side WebAssembly/JS fallback)
+   */
+  async redactPdfVector(
+    task: PdfRedactTask,
+    onProgress?: (ratio: number) => void
+  ): Promise<TaskResult<Blob>> {
+    const startTime = performance.now();
+    try {
+      const buffer = await task.file.arrayBuffer();
+      const blob = await runRedactPdfVector(buffer, task.options, onProgress);
+      const cleanBase = replaceExtension(task.fileName, '');
+      const outputFileName = `${cleanBase}_redacted.pdf`;
+
+      return {
+        taskId: task.id,
+        success: true,
+        data: blob,
+        outputFileName,
+        outputMimeType: 'application/pdf',
+        durationMs: Math.round(performance.now() - startTime),
+        originalSize: task.file.size,
+        resultSize: blob.size,
+      };
+    } catch (err: any) {
+      return {
+        taskId: task.id,
+        success: false,
+        error: this.formatPdfError(err),
+        durationMs: Math.round(performance.now() - startTime),
+      };
+    }
+  }
+
+  /**
+   * On-Device OCR Searchable Layer Injection (client-side WebAssembly/JS fallback)
+   */
+  async ocrPdf(
+    task: PdfOcrTask,
+    onProgress?: (ratio: number) => void
+  ): Promise<TaskResult<Blob>> {
+    const startTime = performance.now();
+    try {
+      const buffer = await task.file.arrayBuffer();
+      const blob = await runOcrPdf(buffer, task.options, onProgress);
+      const cleanBase = replaceExtension(task.fileName, '');
+      const outputFileName = `${cleanBase}_searchable_ocr.pdf`;
+
+      return {
+        taskId: task.id,
+        success: true,
+        data: blob,
+        outputFileName,
+        outputMimeType: 'application/pdf',
+        durationMs: Math.round(performance.now() - startTime),
+        originalSize: task.file.size,
+        resultSize: blob.size,
+      };
+    } catch (err: any) {
+      return {
+        taskId: task.id,
+        success: false,
+        error: this.formatPdfError(err),
+        durationMs: Math.round(performance.now() - startTime),
+      };
+    }
+  }
+
+  /**
    * Deep EXIF, XMP, IPTC, and PDF metadata inspection
    */
   async inspectMetadata(
@@ -575,6 +648,43 @@ export class BrowserAdapter implements EngineAdapter {
     }
 
     return ffmpegService.convert(file, fileName, options, progressCb, abortSig);
+  }
+
+  private watchFolders: Map<string, WatchFolderConfig> = new Map();
+
+  async startWatchFolder(
+    config: WatchFolderConfig,
+    onEvent?: (event: WatchFolderEvent) => void
+  ): Promise<{ id: string; stop: () => void }> {
+    const id = config.id || `watch_${Date.now()}`;
+    const activeConfig = { ...config, id, isActive: true };
+    this.watchFolders.set(id, activeConfig);
+
+    onEvent?.({
+      timestamp: Date.now(),
+      fileName: 'System',
+      status: 'detected',
+      details: `Watch pipeline initiated for ${config.name} (${config.inputPath} → ${config.outputPath})`,
+    });
+
+    const stop = () => {
+      const existing = this.watchFolders.get(id);
+      if (existing) {
+        existing.isActive = false;
+      }
+      onEvent?.({
+        timestamp: Date.now(),
+        fileName: 'System',
+        status: 'detected',
+        details: `Watch pipeline stopped for ${config.name}`,
+      });
+    };
+
+    return { id, stop };
+  }
+
+  async getWatchFolderStatuses(): Promise<WatchFolderConfig[]> {
+    return Array.from(this.watchFolders.values());
   }
 }
 

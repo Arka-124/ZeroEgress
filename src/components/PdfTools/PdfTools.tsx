@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FileText,
   Files,
@@ -13,6 +13,9 @@ import {
   AlertCircle,
   X,
   Lock,
+  Eraser,
+  ScanText,
+  Sparkles,
 } from 'lucide-react';
 import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
@@ -20,12 +23,24 @@ import { Badge } from '../ui/Badge';
 import { engine } from '../../engine';
 import type { PdfMergeItem, TaskResultSuccess, PdfMetadata } from '../../engine/types';
 import { formatBytes, downloadBlob, downloadZip, parsePageRange } from '../../utils/fileUtils';
+import { hasEntitlement } from '../../engine/license/licenseVerifier.ts';
 
-type PdfToolMode = 'merge' | 'split';
+type PdfToolMode = 'merge' | 'split' | 'redact' | 'ocr';
 
-export const PdfTools: React.FC = () => {
+export interface PdfToolsProps {
+  onOpenLicense?: () => void;
+}
+
+export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
   const [activeTab, setActiveTab] = useState<PdfToolMode>('merge');
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
+  const [hasVectorLic, setHasVectorLic] = useState(false);
+  const [hasOcrLic, setHasOcrLic] = useState(false);
+
+  useEffect(() => {
+    hasEntitlement('vector_pdf_redaction').then(setHasVectorLic).catch(() => {});
+    hasEntitlement('on_device_ocr').then(setHasOcrLic).catch(() => {});
+  }, []);
 
   // --- MERGE STATE ---
   const [mergeItems, setMergeItems] = useState<PdfMergeItem[]>([]);
@@ -55,6 +70,146 @@ export const PdfTools: React.FC = () => {
     durationMs: number;
     mode: 'extract' | 'separate-all';
   } | null>(null);
+
+  // --- VECTOR REDACTION STATE ---
+  const [redactFile, setRedactFile] = useState<File | null>(null);
+  const [redactTerms, setRedactTerms] = useState('CONFIDENTIAL, SSN, PRIVATE');
+  const [redactVectors, setRedactVectors] = useState(true);
+  const [drawRedactionBoxes, setDrawRedactionBoxes] = useState(true);
+  const [isRedacting, setIsRedacting] = useState(false);
+  const [redactProgress, setRedactProgress] = useState(0);
+  const [redactedResult, setRedactedResult] = useState<{
+    blob: Blob;
+    name: string;
+    size: number;
+    durationMs: number;
+  } | null>(null);
+
+  // --- ON-DEVICE OCR STATE ---
+  const [ocrFile, setOcrFile] = useState<File | null>(null);
+  const [ocrLanguage, setOcrLanguage] = useState('eng');
+  const [isOcring, setIsOcring] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrResult, setOcrResult] = useState<{
+    blob: Blob;
+    name: string;
+    size: number;
+    durationMs: number;
+  } | null>(null);
+
+  // ===================== REDACT HANDLERS =====================
+  const handleRedactFileAdded = (files: File[]) => {
+    const pdf = files.find((f) => f.type.includes('pdf') || f.name.endsWith('.pdf'));
+    if (!pdf) return;
+    setRedactFile(pdf);
+    setRedactedResult(null);
+    setErrorAlert(null);
+  };
+
+  const executeRedact = async () => {
+    if (!redactFile) return;
+    const terms = redactTerms.split(',').map((t) => t.trim()).filter((t) => t.length > 0);
+    if (terms.length === 0) {
+      setErrorAlert('Please enter at least one keyword or term to redact.');
+      return;
+    }
+
+    setIsRedacting(true);
+    setRedactProgress(0);
+    setErrorAlert(null);
+
+    try {
+      const res = await engine.redactPdfVector(
+        {
+          id: `redact_${Date.now()}`,
+          type: 'pdf-redact',
+          file: redactFile,
+          fileName: redactFile.name,
+          createdAt: Date.now(),
+          options: {
+            searchTerms: terms,
+            redactVectors,
+            drawRedactionBoxes,
+          },
+        },
+        (progress) => setRedactProgress(Math.round(progress * 100))
+      );
+
+      if (res.success) {
+        setRedactedResult({
+          blob: res.data,
+          name: res.outputFileName,
+          size: res.resultSize,
+          durationMs: res.durationMs,
+        });
+      } else {
+        setErrorAlert(res.error);
+      }
+    } catch (err: any) {
+      setErrorAlert(err?.message || 'Vector redaction failed.');
+    } finally {
+      setIsRedacting(false);
+    }
+  };
+
+  const handleDownloadRedacted = () => {
+    if (redactedResult) {
+      downloadBlob(redactedResult.blob, redactedResult.name);
+    }
+  };
+
+  // ===================== OCR HANDLERS =====================
+  const handleOcrFileAdded = (files: File[]) => {
+    const pdf = files.find((f) => f.type.includes('pdf') || f.name.endsWith('.pdf'));
+    if (!pdf) return;
+    setOcrFile(pdf);
+    setOcrResult(null);
+    setErrorAlert(null);
+  };
+
+  const executeOcr = async () => {
+    if (!ocrFile) return;
+    setIsOcring(true);
+    setOcrProgress(0);
+    setErrorAlert(null);
+
+    try {
+      const res = await engine.ocrPdf(
+        {
+          id: `ocr_${Date.now()}`,
+          type: 'pdf-ocr',
+          file: ocrFile,
+          fileName: ocrFile.name,
+          createdAt: Date.now(),
+          options: {
+            language: ocrLanguage,
+          },
+        },
+        (progress) => setOcrProgress(Math.round(progress * 100))
+      );
+
+      if (res.success) {
+        setOcrResult({
+          blob: res.data,
+          name: res.outputFileName,
+          size: res.resultSize,
+          durationMs: res.durationMs,
+        });
+      } else {
+        setErrorAlert(res.error);
+      }
+    } catch (err: any) {
+      setErrorAlert(err?.message || 'On-device OCR failed.');
+    } finally {
+      setIsOcring(false);
+    }
+  };
+
+  const handleDownloadOcr = () => {
+    if (ocrResult) {
+      downloadBlob(ocrResult.blob, ocrResult.name);
+    }
+  };
 
   // ===================== MERGE HANDLERS =====================
   const handleMergeFilesAdded = async (files: File[]) => {
@@ -350,6 +505,38 @@ export const PdfTools: React.FC = () => {
                 Active
               </span>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('redact')}
+            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+              activeTab === 'redact'
+                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Eraser className="w-3.5 h-3.5 text-rose-400" />
+            <span>Vector Redact</span>
+            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-300 font-bold">
+              PRO
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('ocr')}
+            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+              activeTab === 'ocr'
+                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <ScanText className="w-3.5 h-3.5 text-amber-400" />
+            <span>On-Device OCR</span>
+            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-300 font-bold">
+              PRO
+            </span>
           </button>
         </div>
       </div>
@@ -797,6 +984,261 @@ export const PdfTools: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* ======================= VECTOR REDACT VIEW (PRO) ======================= */}
+      {activeTab === 'redact' && (
+        <div className="space-y-5">
+          {!hasVectorLic && (
+            <div className="p-3.5 rounded-xl border border-rose-950/70 bg-rose-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5 text-rose-300">
+                <Sparkles className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>
+                  <strong>True Vector Stream Redaction</strong> permanently purges text and operator streams. Requires an offline license key or evaluation key.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenLicense}
+                className="px-3 py-1 rounded-lg bg-rose-500 hover:bg-rose-400 text-zinc-950 font-semibold text-xs transition-colors shrink-0 cursor-pointer"
+              >
+                Unlock Pro Features
+              </button>
+            </div>
+          )}
+
+          {!redactFile ? (
+            <Dropzone
+              onFilesSelected={handleRedactFileAdded}
+              accept=".pdf,application/pdf"
+              title="Drop PDF file to purge confidential content"
+              subtitle="Select PDF · Targeted text strings and vector paths will be permanently erased from content streams"
+              hint="True Vector Erasure · Zero Uploads"
+            />
+          ) : (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-900/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-200">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-100">{redactFile.name}</p>
+                    <p className="text-[11px] font-mono text-zinc-400">{formatBytes(redactFile.size)}</p>
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setRedactFile(null);
+                    setRedactedResult(null);
+                  }}
+                  icon={<X className="w-3.5 h-3.5" />}
+                >
+                  Change File
+                </Button>
+              </div>
+
+              {/* Redaction Options Form */}
+              <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-zinc-200 block mb-1.5">
+                    Search Terms / Phrases to Obliterate (Comma-Separated):
+                  </label>
+                  <input
+                    type="text"
+                    value={redactTerms}
+                    onChange={(e) => setRedactTerms(e.target.value)}
+                    placeholder="e.g. Confidential, 123-45-6789, Top Secret, Jane Doe"
+                    className="w-full px-3 py-2 text-xs bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-none focus:border-zinc-600 font-mono"
+                  />
+                  <p className="text-[10px] text-zinc-500 mt-1 font-mono">
+                    All matching literal strings, hex sequences, and TJ glyph array operations will be purged from the PDF streams.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-6 pt-1">
+                  <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={redactVectors}
+                      onChange={(e) => setRedactVectors(e.target.checked)}
+                      className="rounded border-zinc-700 bg-zinc-900 text-rose-500 focus:ring-0"
+                    />
+                    <span>Purge Vector Path Operators (drawings/shapes)</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={drawRedactionBoxes}
+                      onChange={(e) => setDrawRedactionBoxes(e.target.checked)}
+                      className="rounded border-zinc-700 bg-zinc-900 text-rose-500 focus:ring-0"
+                    />
+                    <span>Draw Solid Blackout Redaction Blocks</span>
+                  </label>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={executeRedact}
+                    loading={isRedacting}
+                    icon={<Eraser className="w-3.5 h-3.5 text-rose-400" />}
+                  >
+                    {isRedacting ? `Purging Streams (${redactProgress}%)` : 'Purge Vector Streams & Sanitize'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Redacted Result Download Card */}
+              {redactedResult && (
+                <div className="p-4 rounded-xl border border-emerald-900/40 bg-emerald-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-950 border border-emerald-800 flex items-center justify-center text-emerald-400">
+                      <FileCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-emerald-300">
+                        Vector Streams Sanitized Successfully ({redactedResult.durationMs}ms)
+                      </p>
+                      <p className="text-[11px] font-mono text-zinc-400 mt-0.5">
+                        {redactedResult.name} · {formatBytes(redactedResult.size)} · 0 Egress
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleDownloadRedacted}
+                    icon={<Download className="w-3.5 h-3.5" />}
+                  >
+                    Download Sanitized PDF
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ======================= ON-DEVICE OCR VIEW (PRO) ======================= */}
+      {activeTab === 'ocr' && (
+        <div className="space-y-5">
+          {!hasOcrLic && (
+            <div className="p-3.5 rounded-xl border border-amber-950/70 bg-amber-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5 text-amber-300">
+                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>
+                  <strong>On-Device Scanned PDF OCR</strong> injects searchable ISO 32000-1 text layers without cloud APIs. Requires an offline license key or evaluation key.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenLicense}
+                className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold text-xs transition-colors shrink-0 cursor-pointer"
+              >
+                Unlock Pro Features
+              </button>
+            </div>
+          )}
+
+          {!ocrFile ? (
+            <Dropzone
+              onFilesSelected={handleOcrFileAdded}
+              accept=".pdf,application/pdf"
+              title="Drop scanned PDF document to inject searchable text layer"
+              subtitle="Select PDF · Scanned raster images will have an invisible searchable text layer applied"
+              hint="100% On-Device · Zero Cloud Calls"
+            />
+          ) : (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-900/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-200">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-100">{ocrFile.name}</p>
+                    <p className="text-[11px] font-mono text-zinc-400">{formatBytes(ocrFile.size)}</p>
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setOcrFile(null);
+                    setOcrResult(null);
+                  }}
+                  icon={<X className="w-3.5 h-3.5" />}
+                >
+                  Change File
+                </Button>
+              </div>
+
+              {/* OCR Controls */}
+              <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <label className="text-xs font-medium text-zinc-300">Document Language:</label>
+                  <select
+                    value={ocrLanguage}
+                    onChange={(e) => setOcrLanguage(e.target.value)}
+                    className="px-3 py-1.5 text-xs bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 font-mono focus:outline-none focus:border-zinc-600"
+                  >
+                    <option value="eng">English (eng)</option>
+                    <option value="deu">German (deu)</option>
+                    <option value="fra">French (fra)</option>
+                    <option value="spa">Spanish (spa)</option>
+                  </select>
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={executeOcr}
+                  loading={isOcring}
+                  icon={<ScanText className="w-3.5 h-3.5 text-amber-400" />}
+                >
+                  {isOcring ? `Generating OCR Layer (${ocrProgress}%)` : 'Inject Searchable Text Layer'}
+                </Button>
+              </div>
+
+              {/* OCR Result Download Card */}
+              {ocrResult && (
+                <div className="p-4 rounded-xl border border-emerald-900/40 bg-emerald-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-950 border border-emerald-800 flex items-center justify-center text-emerald-400">
+                      <FileCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-emerald-300">
+                        Searchable OCR Layer Generated ({ocrResult.durationMs}ms)
+                      </p>
+                      <p className="text-[11px] font-mono text-zinc-400 mt-0.5">
+                        {ocrResult.name} · {formatBytes(ocrResult.size)} · Text search ready
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleDownloadOcr}
+                    icon={<Download className="w-3.5 h-3.5" />}
+                  >
+                    Download Searchable PDF
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
+

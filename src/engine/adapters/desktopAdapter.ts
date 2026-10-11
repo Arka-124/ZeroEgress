@@ -9,6 +9,10 @@ import type {
   PdfMetadata,
   PdfMergeTask,
   PdfSplitTask,
+  PdfRedactTask,
+  PdfOcrTask,
+  WatchFolderConfig,
+  WatchFolderEvent,
   TaskResult,
   DataFormat,
   DataOptions,
@@ -247,6 +251,136 @@ export class DesktopAdapter implements EngineAdapter {
 
   async isFormatSupported(format: ImageTargetFormat): Promise<boolean> {
     return this.fallbackAdapter.isFormatSupported(format);
+  }
+
+  async redactPdfVector(
+    task: PdfRedactTask,
+    onProgress?: (ratio: number) => void
+  ): Promise<TaskResult<Blob>> {
+    if (!isTauriEnvironment()) {
+      return this.fallbackAdapter.redactPdfVector(task, onProgress);
+    }
+
+    const startTime = performance.now();
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const buffer = await task.file.arrayBuffer();
+      const bytes = Array.from(new Uint8Array(buffer));
+
+      const outputBytes = await invoke<number[]>('redact_pdf_vector_native', {
+        inputBytes: bytes,
+        searchTerms: task.options.searchTerms,
+        redactVectors: Boolean(task.options.redactVectors),
+      });
+
+      const uint8 = new Uint8Array(outputBytes);
+      const blob = new Blob([uint8], { type: 'application/pdf' });
+
+      return {
+        taskId: task.id,
+        success: true,
+        data: blob,
+        outputFileName: `${task.fileName.replace(/\.pdf$/i, '')}_redacted.pdf`,
+        outputMimeType: 'application/pdf',
+        durationMs: Math.round(performance.now() - startTime),
+        originalSize: task.file.size,
+        resultSize: blob.size,
+      };
+    } catch {
+      return this.fallbackAdapter.redactPdfVector(task, onProgress);
+    }
+  }
+
+  async ocrPdf(
+    task: PdfOcrTask,
+    onProgress?: (ratio: number) => void
+  ): Promise<TaskResult<Blob>> {
+    if (!isTauriEnvironment()) {
+      return this.fallbackAdapter.ocrPdf(task, onProgress);
+    }
+
+    const startTime = performance.now();
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const buffer = await task.file.arrayBuffer();
+      const bytes = Array.from(new Uint8Array(buffer));
+
+      const outputBytes = await invoke<number[]>('ocr_pdf_native', {
+        inputBytes: bytes,
+        language: task.options.language || 'eng',
+      });
+
+      const uint8 = new Uint8Array(outputBytes);
+      const blob = new Blob([uint8], { type: 'application/pdf' });
+
+      return {
+        taskId: task.id,
+        success: true,
+        data: blob,
+        outputFileName: `${task.fileName.replace(/\.pdf$/i, '')}_searchable_ocr.pdf`,
+        outputMimeType: 'application/pdf',
+        durationMs: Math.round(performance.now() - startTime),
+        originalSize: task.file.size,
+        resultSize: blob.size,
+      };
+    } catch {
+      return this.fallbackAdapter.ocrPdf(task, onProgress);
+    }
+  }
+
+  async startWatchFolder(
+    config: WatchFolderConfig,
+    onEvent?: (event: WatchFolderEvent) => void
+  ): Promise<{ id: string; stop: () => void }> {
+    if (!isTauriEnvironment()) {
+      return this.fallbackAdapter.startWatchFolder(config, onEvent);
+    }
+
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const watcherId = await invoke<string>('start_watch_folder_native', {
+        inputDir: config.inputPath,
+        outputDir: config.outputPath,
+        targetFormat: config.targetFormat,
+      });
+
+      onEvent?.({
+        timestamp: Date.now(),
+        fileName: 'Native Daemon',
+        status: 'detected',
+        details: `Native watcher daemon started with ID: ${watcherId}`,
+      });
+
+      const stop = () => {
+        invoke('stop_watch_folder_native', { watcherId }).catch(() => {});
+      };
+
+      return { id: watcherId, stop };
+    } catch {
+      return this.fallbackAdapter.startWatchFolder(config, onEvent);
+    }
+  }
+
+  async getWatchFolderStatuses(): Promise<WatchFolderConfig[]> {
+    if (!isTauriEnvironment()) {
+      return this.fallbackAdapter.getWatchFolderStatuses();
+    }
+
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const nativeStatuses = await invoke<any[]>('get_watch_folders_status_native');
+      return nativeStatuses.map((s) => ({
+        id: s.watcher_id,
+        name: `Watch ${s.target_format}`,
+        inputPath: s.input_dir,
+        outputPath: s.output_dir,
+        targetFormat: s.target_format,
+        isActive: s.is_active,
+        filesProcessed: s.files_processed,
+      }));
+    } catch {
+      return this.fallbackAdapter.getWatchFolderStatuses();
+    }
   }
 
   /**
