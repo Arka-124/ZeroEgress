@@ -23,7 +23,7 @@ import { Badge } from '../ui/Badge';
 import { engine } from '../../engine';
 import type { PdfMergeItem, TaskResultSuccess, PdfMetadata } from '../../engine/types';
 import { formatBytes, downloadBlob, downloadZip, parsePageRange } from '../../utils/fileUtils';
-import { hasEntitlement } from '../../engine/license/licenseVerifier.ts';
+import { hasEntitlement, SHOW_PRO_BADGES } from '../../engine/license/licenseVerifier.ts';
 
 type PdfToolMode = 'merge' | 'split' | 'redact' | 'ocr';
 
@@ -34,8 +34,8 @@ export interface PdfToolsProps {
 export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
   const [activeTab, setActiveTab] = useState<PdfToolMode>('merge');
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
-  const [hasVectorLic, setHasVectorLic] = useState(false);
-  const [hasOcrLic, setHasOcrLic] = useState(false);
+  const [hasVectorLic, setHasVectorLic] = useState(true);
+  const [hasOcrLic, setHasOcrLic] = useState(true);
 
   useEffect(() => {
     hasEntitlement('vector_pdf_redaction').then(setHasVectorLic).catch(() => {});
@@ -518,9 +518,11 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
           >
             <Eraser className="w-3.5 h-3.5 text-rose-400" />
             <span>Vector Redact</span>
-            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-300 font-bold">
-              PRO
-            </span>
+            {SHOW_PRO_BADGES && (
+              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-300 font-bold">
+                PRO
+              </span>
+            )}
           </button>
 
           <button
@@ -534,9 +536,11 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
           >
             <ScanText className="w-3.5 h-3.5 text-amber-400" />
             <span>On-Device OCR</span>
-            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-300 font-bold">
-              PRO
-            </span>
+            {SHOW_PRO_BADGES && (
+              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-300 font-bold">
+                PRO
+              </span>
+            )}
           </button>
         </div>
       </div>

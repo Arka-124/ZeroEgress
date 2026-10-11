@@ -20,6 +20,7 @@ import { WatchFolders } from './components/WatchFolders/WatchFolders';
 import { PrivacyInfo } from './components/PrivacyInfo';
 import { LicenseModal } from './components/License/LicenseModal';
 import { ArchitectureModal } from './components/Architecture/ArchitectureModal';
+import { SHOW_PRO_BADGES, SHOW_LICENSE_UI } from './engine/license/licenseVerifier';
 
 // Lazy-load MediaTools to keep initial bundle small and defer FFmpeg WebAssembly core
 const MediaTools = React.lazy(() => import('./components/MediaTools/MediaTools'));
@@ -170,15 +171,18 @@ export const App: React.FC = () => {
             >
               <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>PDF & Vector Redact</span>
-              <span
-                className={`text-[9px] font-mono px-1 py-0.2 rounded transition-colors font-bold ${
-                  activeTool === 'pdf'
-                    ? 'bg-zinc-300 text-zinc-950'
-                    : 'bg-zinc-800 text-zinc-300'
-                }`}
-              >
-                PRO
-              </span>
+              {/* PRO badge temporarily hidden for clean unified free toolset */}
+              {SHOW_PRO_BADGES && (
+                <span
+                  className={`text-[9px] font-mono px-1 py-0.2 rounded transition-colors font-bold ${
+                    activeTool === 'pdf'
+                      ? 'bg-zinc-300 text-zinc-950'
+                      : 'bg-zinc-800 text-zinc-300'
+                  }`}
+                >
+                  PRO
+                </span>
+              )}
             </button>
 
             <button
@@ -330,16 +334,21 @@ export const App: React.FC = () => {
               <Shield className="w-3 h-3 text-emerald-400" />
               <span>Air-Gap Diagnostics</span>
             </button>
-            <span className="text-zinc-700">|</span>
-            <button
-              type="button"
-              onClick={() => setIsLicenseOpen(true)}
-              className="hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
-              title="View offline Ed25519 cryptographic licensing & compliance"
-            >
-              <Key className="w-3 h-3 text-amber-400" />
-              <span>Offline Licensing</span>
-            </button>
+            {/* Offline Licensing button temporarily hidden for free access */}
+            {SHOW_LICENSE_UI && (
+              <>
+                <span className="text-zinc-700">|</span>
+                <button
+                  type="button"
+                  onClick={() => setIsLicenseOpen(true)}
+                  className="hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
+                  title="View offline Ed25519 cryptographic licensing & compliance"
+                >
+                  <Key className="w-3 h-3 text-amber-400" />
+                  <span>Offline Licensing</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </footer>

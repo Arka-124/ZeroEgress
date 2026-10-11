@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Moon, Sun, Wifi, WifiOff, FileCode2, Layers, Key } from 'lucide-react';
-import { getStoredLicense } from '../engine/license/licenseVerifier.ts';
+import { getStoredLicense, SHOW_LICENSE_UI } from '../engine/license/licenseVerifier.ts';
 import type { LicenseVerificationResult } from '../engine/license/types.ts';
 
 export interface HeaderProps {
@@ -107,21 +107,23 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* License & Compliance Button */}
-          <button
-            type="button"
-            onClick={onOpenLicense}
-            className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-900 text-zinc-300 hover:text-zinc-100 transition-colors cursor-pointer"
-            title="View offline Ed25519 cryptographic license status and compliance audit report"
-          >
-            <Key className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline font-mono text-[11px]">
-              {tier ? `${tier}` : 'License'}
-            </span>
-            {tier && (
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            )}
-          </button>
+          {/* License & Compliance Button (temporarily hidden for free public access) */}
+          {SHOW_LICENSE_UI && (
+            <button
+              type="button"
+              onClick={onOpenLicense}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded border border-zinc-800 bg-zinc-900/60 hover:bg-zinc-900 text-zinc-300 hover:text-zinc-100 transition-colors cursor-pointer"
+              title="View offline Ed25519 cryptographic license status and compliance audit report"
+            >
+              <Key className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline font-mono text-[11px]">
+                {tier ? `${tier}` : 'License'}
+              </span>
+              {tier && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              )}
+            </button>
+          )}
 
           {/* Architecture Dialog Trigger */}
           <button

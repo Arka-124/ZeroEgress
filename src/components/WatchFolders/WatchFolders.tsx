@@ -13,7 +13,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { engine } from '../../engine';
-import { hasEntitlement } from '../../engine/license/licenseVerifier.ts';
+import { hasEntitlement, SHOW_LICENSE_UI } from '../../engine/license/licenseVerifier.ts';
 import type { WatchFolderConfig, WatchFolderEvent } from '../../engine/types.ts';
 import { formatBytes } from '../../utils/fileUtils.ts';
 
@@ -22,8 +22,8 @@ export interface WatchFoldersProps {
 }
 
 export const WatchFolders: React.FC<WatchFoldersProps> = ({ onOpenLicense }) => {
-  const [hasLicense, setHasLicense] = useState(false);
-  const [isCheckingLicense, setIsCheckingLicense] = useState(true);
+  const [hasLicense, setHasLicense] = useState(true);
+  const [isCheckingLicense, setIsCheckingLicense] = useState(false);
 
   // Configuration state
   const [inputDir, setInputDir] = useState('C:\\ZeroEgress\\Incoming');
@@ -155,7 +155,7 @@ export const WatchFolders: React.FC<WatchFoldersProps> = ({ onOpenLicense }) => 
             <FolderSync className="w-6 h-6 text-emerald-400" />
             <span>Automated Watch Folders Pipeline</span>
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-800 text-emerald-400 font-semibold">
-              PRO DAEMON
+              DAEMON
             </span>
           </h2>
           <p className="text-xs text-zinc-400 mt-1">
@@ -163,9 +163,9 @@ export const WatchFolders: React.FC<WatchFoldersProps> = ({ onOpenLicense }) => 
           </p>
         </div>
 
-        {/* License Pill */}
+        {/* License Pill (temporarily hidden) */}
         <div className="flex items-center gap-2">
-          {!isCheckingLicense && (
+          {SHOW_LICENSE_UI && !isCheckingLicense && (
             <button
               type="button"
               onClick={onOpenLicense}

@@ -266,10 +266,25 @@ export function clearStoredLicense(): void {
 }
 
 /**
- * Check if a specific entitlement is active on the current license
+ * Global feature flags for free tier bypass and UI display.
+ * Toggle these to re-enable Pro gating and restore the license UI.
+ */
+export const BYPASS_PRO_RESTRICTIONS = true;
+export const SHOW_PRO_BADGES = Boolean(false) as boolean;
+export const SHOW_LICENSE_UI = Boolean(false) as boolean;
+
+/**
+ * Check if a specific entitlement is active on the current license.
+ * Temporarily bypassed: unlocks all features for free by default without requiring an entered key.
  */
 export async function hasEntitlement(entitlement: LicenseEntitlement): Promise<boolean> {
+  // Temporary bypass: all Pro features unlocked for free by default
+  if (BYPASS_PRO_RESTRICTIONS) {
+    return true;
+  }
+
   const lic = await getStoredLicense();
   if (!lic.isValid || !lic.payload) return false;
   return lic.payload.entitlements.includes(entitlement);
 }
+
