@@ -11,7 +11,8 @@ export type TaskType =
   | 'pdf-split'
   | 'pdf-inspect'
   | 'metadata-inspect'
-  | 'metadata-strip';
+  | 'metadata-strip'
+  | 'media-convert';
 
 export interface BaseTask {
   id: string;
@@ -118,13 +119,35 @@ export interface MetadataStripTask extends BaseTask {
   options?: MetadataStripOptions;
 }
 
+export type AudioBitratePreset = '128k' | '192k' | '320k';
+
+export interface MediaTrimOptions {
+  startTime?: number; // In seconds
+  endTime?: number;   // In seconds
+}
+
+export interface MediaOptions {
+  targetFormat: string; // e.g. 'mp3', 'wav', 'aac', 'ogg', 'flac', 'mp4', 'webm'
+  bitrate?: AudioBitratePreset | string;
+  trim?: MediaTrimOptions;
+  losslessTrim?: boolean;
+}
+
+export interface MediaConvertTask extends BaseTask {
+  type: 'media-convert';
+  file: File | Blob;
+  fileName: string;
+  options: MediaOptions;
+}
+
 export type ConversionTask =
   | ImageConvertTask
   | PdfMergeTask
   | PdfSplitTask
   | PdfInspectTask
   | MetadataInspectTask
-  | MetadataStripTask;
+  | MetadataStripTask
+  | MediaConvertTask;
 
 export interface TaskResultSuccess<T = Blob | Blob[] | PdfMetadata | MetadataInspectionReport> {
   taskId: string;
@@ -189,6 +212,15 @@ export interface EngineAdapter {
     buffer: ArrayBuffer,
     algorithm: HashAlgorithm
   ): Promise<string>;
+  convertMedia(
+    taskOrFile: MediaConvertTask | File,
+    targetFormatOrOptions?: string | MediaOptions,
+    optionsOrProgress?: MediaOptions | ((ratio: number, timeMs?: number) => void),
+    onProgress?: (ratio: number, timeMs?: number) => void,
+    signal?: AbortSignal
+  ): Promise<TaskResult<Blob>>;
+  isMediaEngineLoaded?(): boolean;
+  loadMediaEngine?(onProgress?: (ratio: number) => void): Promise<void>;
   isFormatSupported(format: ImageTargetFormat): Promise<boolean>;
 }
 

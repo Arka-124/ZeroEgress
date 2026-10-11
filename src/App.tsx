@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ImageIcon, FileText, Shield, ShieldAlert, UploadCloud, Code2 } from 'lucide-react';
+import { ImageIcon, FileText, Shield, ShieldAlert, UploadCloud, Code2, Film } from 'lucide-react';
 import { Header } from './components/Header';
 import { ImageConverter } from './components/ImageConverter/ImageConverter';
 import { PdfTools } from './components/PdfTools/PdfTools';
@@ -7,13 +7,17 @@ import { MetadataScrubber } from './components/MetadataScrubber/MetadataScrubber
 import { DataTools } from './components/DataTools/DataTools';
 import { PrivacyInfo } from './components/PrivacyInfo';
 
-type ActiveTool = 'image' | 'pdf' | 'metadata' | 'data';
+// Lazy-load MediaTools to keep initial bundle small and defer FFmpeg WebAssembly core
+const MediaTools = React.lazy(() => import('./components/MediaTools/MediaTools'));
+
+type ActiveTool = 'image' | 'pdf' | 'metadata' | 'data' | 'media';
 
 const activeToolTitles: Record<ActiveTool, string> = {
   image: 'Instant Image Converter',
   pdf: 'PDF Split & Merge',
   metadata: 'Metadata Stripper',
   data: 'Data & Hashes',
+  media: 'Media Studio & Transcoder',
 };
 
 export const App: React.FC = () => {
@@ -189,6 +193,28 @@ export const App: React.FC = () => {
                 JSON / CSV / SHA
               </span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTool('media')}
+              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer ${
+                activeTool === 'media'
+                  ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+              }`}
+            >
+              <Film className="w-4 h-4 text-purple-400" />
+              <span>Media Studio</span>
+              <span
+                className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition-colors ${
+                  activeTool === 'media'
+                    ? 'bg-zinc-300 text-zinc-950 font-semibold'
+                    : 'bg-zinc-800 text-zinc-400'
+                }`}
+              >
+                FFmpeg WASM
+              </span>
+            </button>
           </div>
 
           {/* Quick Architecture Callout */}
@@ -214,6 +240,20 @@ export const App: React.FC = () => {
           {activeTool === 'pdf' && <PdfTools />}
           {activeTool === 'metadata' && <MetadataScrubber />}
           {activeTool === 'data' && <DataTools />}
+          {activeTool === 'media' && (
+            <React.Suspense
+              fallback={
+                <div className="py-20 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="w-8 h-8 rounded-full border-2 border-zinc-700 border-t-zinc-300 animate-spin" />
+                  <p className="text-xs font-mono text-zinc-400">
+                    Lazy-loading FFmpeg WebAssembly Studio...
+                  </p>
+                </div>
+              }
+            >
+              <MediaTools />
+            </React.Suspense>
+          )}
         </div>
       </main>
 

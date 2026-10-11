@@ -29,6 +29,21 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+  },
+  preview: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+  },
+  optimizeDeps: {
+    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'],
+  },
   build: {
     rollupOptions: {
       output: {
@@ -39,8 +54,12 @@ export default defineConfig({
           if (id.includes('node_modules/jszip')) {
             return 'zip-engine';
           }
+          if (id.includes('@ffmpeg/ffmpeg') || id.includes('@ffmpeg/util')) {
+            return 'ffmpeg-core';
+          }
         },
       },
     },
   },
 })
+

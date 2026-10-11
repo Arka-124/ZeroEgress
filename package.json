@@ -7,10 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "test": "node --test test/*.test.ts",
-    "lint": "oxlint",
+    "lint": "oxlint src test",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "js-yaml": "^5.4.3",
     "jszip": "^3.10.2",
     "lucide-react": "^1.55.0",
@@ -20,6 +22,7 @@
     "vite-plugin-pwa": "^2.0.0"
   },
   "devDependencies": {
+    "@ffmpeg/core": "^0.12.10",
     "@tailwindcss/vite": "^4.3.3",
     "@types/js-yaml": "^4.0.9",
     "@types/jszip": "^3.4.0",

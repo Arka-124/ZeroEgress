@@ -14,12 +14,15 @@ import type {
   DataFormat,
   DataOptions,
   HashAlgorithm,
+  MediaConvertTask,
+  MediaOptions,
 } from '../types';
 import { replaceExtension, parsePageRange } from '../../utils/fileUtils.ts';
 import { parseFileMetadata } from '../metadata/exifParser.ts';
 import { stripMetadataFromBuffer } from '../metadata/binaryStripper.ts';
 import { convertData as engineConvertData } from '../data/dataConverter.ts';
 import { md5 } from '../crypto/md5.ts';
+import { ffmpegService } from '../media/ffmpegService.ts';
 
 export class BrowserAdapter implements EngineAdapter {
   readonly name = 'Browser WebAssembly & Canvas Engine';
@@ -526,5 +529,53 @@ export class BrowserAdapter implements EngineAdapter {
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
   }
+
+  isMediaEngineLoaded(): boolean {
+    return ffmpegService.isEngineLoaded();
+  }
+
+  async loadMediaEngine(onProgress?: (ratio: number) => void): Promise<void> {
+    await ffmpegService.load(onProgress);
+  }
+
+  /**
+   * High-performance client-side media conversion, audio extraction, and trimming via FFmpeg WebAssembly.
+   */
+  async convertMedia(
+    taskOrFile: MediaConvertTask | File,
+    targetFormatOrOptions?: string | MediaOptions,
+    optionsOrProgress?: MediaOptions | ((ratio: number, timeMs?: number) => void),
+    onProgress?: (ratio: number, timeMs?: number) => void,
+    signal?: AbortSignal
+  ): Promise<TaskResult<Blob>> {
+    let file: File | Blob;
+    let fileName: string;
+    let options: MediaOptions;
+    let progressCb: ((ratio: number, timeMs?: number) => void) | undefined = onProgress;
+    let abortSig: AbortSignal | undefined = signal;
+
+    if ('type' in taskOrFile && taskOrFile.type === 'media-convert') {
+      const task = taskOrFile as MediaConvertTask;
+      file = task.file;
+      fileName = task.fileName;
+      options = task.options;
+      if (typeof optionsOrProgress === 'function') {
+        progressCb = optionsOrProgress;
+      }
+    } else {
+      file = taskOrFile as File;
+      fileName = (taskOrFile as File).name || 'media.mp4';
+      if (typeof targetFormatOrOptions === 'string') {
+        const targetFormat = targetFormatOrOptions;
+        const opts = (typeof optionsOrProgress === 'object' ? optionsOrProgress : {}) as MediaOptions;
+        options = { ...opts, targetFormat };
+      } else {
+        options = (targetFormatOrOptions as MediaOptions) || { targetFormat: 'mp3' };
+      }
+    }
+
+    return ffmpegService.convert(file, fileName, options, progressCb, abortSig);
+  }
 }
+
 
