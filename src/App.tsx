@@ -18,7 +18,6 @@ import { DataTools } from './components/DataTools/DataTools';
 import { WatchFolders } from './components/WatchFolders/WatchFolders';
 import { PrivacyInfo } from './components/PrivacyInfo';
 import { LicenseModal } from './components/License/LicenseModal';
-import { engine } from './engine';
 
 // Lazy-load MediaTools to keep initial bundle small and defer FFmpeg WebAssembly core
 const MediaTools = React.lazy(() => import('./components/MediaTools/MediaTools'));
@@ -138,8 +137,8 @@ export const App: React.FC = () => {
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 space-y-8">
         {/* Tool Switcher Navigation (Linear / Raycast utilitarian tab bar) */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="inline-flex flex-wrap p-1 rounded-xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm self-start gap-1">
+        <div className="flex items-center justify-center w-full">
+          <div className="inline-flex flex-wrap items-center justify-center p-1 rounded-xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm gap-1 shadow-lg">
             <button
               type="button"
               onClick={() => setActiveTool('image')}
@@ -261,22 +260,6 @@ export const App: React.FC = () => {
               >
                 DAEMON
               </span>
-            </button>
-          </div>
-
-          {/* Quick Architecture Callout */}
-          <div className="hidden md:flex items-center gap-3 text-xs text-zinc-400 font-mono">
-            <span className="flex items-center gap-1.5 text-zinc-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Engine: {engine.name.includes('Tauri') ? 'Tauri Rust Native' : 'Browser WebAssembly'}
-            </span>
-            <span className="text-zinc-600">·</span>
-            <button
-              type="button"
-              onClick={() => setIsPrivacyOpen(true)}
-              className="text-zinc-400 hover:text-zinc-200 transition-colors underline underline-offset-4 decoration-zinc-700 cursor-pointer"
-            >
-              Verify Air-Gap
             </button>
           </div>
         </div>
