@@ -5,7 +5,13 @@
  * and future native runtimes (Tauri / Rust backend).
  */
 
-export type TaskType = 'image-convert' | 'pdf-merge' | 'pdf-split' | 'pdf-inspect';
+export type TaskType =
+  | 'image-convert'
+  | 'pdf-merge'
+  | 'pdf-split'
+  | 'pdf-inspect'
+  | 'metadata-inspect'
+  | 'metadata-strip';
 
 export interface BaseTask {
   id: string;
@@ -60,9 +66,67 @@ export interface PdfInspectTask extends BaseTask {
   fileName: string;
 }
 
-export type ConversionTask = ImageConvertTask | PdfMergeTask | PdfSplitTask | PdfInspectTask;
+export type MetadataCategory = 'gps' | 'camera' | 'timestamp' | 'software' | 'document' | 'other';
 
-export interface TaskResultSuccess<T = Blob | Blob[] | PdfMetadata> {
+export interface MetadataTag {
+  category: MetadataCategory;
+  key: string;
+  label: string;
+  value: string;
+  raw?: any;
+}
+
+export interface GpsCoordinates {
+  latitude: number;
+  longitude: number;
+  altitude?: number;
+  formattedDMS?: string;
+}
+
+export interface MetadataInspectionReport {
+  fileType: 'image' | 'pdf' | 'unknown';
+  hasSensitiveMetadata: boolean;
+  totalTagsFound: number;
+  tags: MetadataTag[];
+  gps?: GpsCoordinates;
+  camera?: {
+    make?: string;
+    model?: string;
+    lens?: string;
+  };
+  software?: string;
+  timestamp?: string;
+  title?: string;
+  author?: string;
+}
+
+export interface MetadataInspectTask extends BaseTask {
+  type: 'metadata-inspect';
+  file: File | Blob;
+  fileName: string;
+}
+
+export interface MetadataStripOptions {
+  removeGps?: boolean;
+  removeAll?: boolean;
+}
+
+export interface MetadataStripTask extends BaseTask {
+  type: 'metadata-strip';
+  file: File | Blob;
+  fileName: string;
+  options?: MetadataStripOptions;
+}
+
+export type ConversionTask =
+  | ImageConvertTask
+  | PdfMergeTask
+  | PdfSplitTask
+  | PdfInspectTask
+  | MetadataInspectTask
+  | MetadataStripTask;
+
+export interface TaskResultSuccess<T = Blob | Blob[] | PdfMetadata | MetadataInspectionReport> {
   taskId: string;
   success: true;
   data: T;
@@ -103,5 +167,7 @@ export interface EngineAdapter {
   mergePdfs(task: PdfMergeTask, onProgress?: (ratio: number) => void): Promise<TaskResult<Blob>>;
   splitPdf(task: PdfSplitTask, onProgress?: (ratio: number) => void): Promise<TaskResult<Blob | Blob[]>>;
   inspectPdf(task: PdfInspectTask): Promise<TaskResult<PdfMetadata>>;
+  inspectMetadata(task: MetadataInspectTask): Promise<TaskResult<MetadataInspectionReport>>;
+  stripMetadata(task: MetadataStripTask, onProgress?: (ratio: number) => void): Promise<TaskResult<Blob>>;
   isFormatSupported(format: ImageTargetFormat): Promise<boolean>;
 }

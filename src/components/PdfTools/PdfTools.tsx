@@ -10,6 +10,9 @@ import {
   Archive,
   FileCheck,
   Layers,
+  AlertCircle,
+  X,
+  Lock,
 } from 'lucide-react';
 import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
@@ -22,6 +25,7 @@ type PdfToolMode = 'merge' | 'split';
 
 export const PdfTools: React.FC = () => {
   const [activeTab, setActiveTab] = useState<PdfToolMode>('merge');
+  const [errorAlert, setErrorAlert] = useState<string | null>(null);
 
   // --- MERGE STATE ---
   const [mergeItems, setMergeItems] = useState<PdfMergeItem[]>([]);
@@ -59,7 +63,6 @@ export const PdfTools: React.FC = () => {
 
     for (const file of pdfFiles) {
       const id = `${file.name}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-      // Inspect page count asynchronously
       let pageCount: number | undefined = undefined;
       try {
         const inspection = await engine.inspectPdf({
@@ -71,9 +74,13 @@ export const PdfTools: React.FC = () => {
         });
         if (inspection.success) {
           pageCount = inspection.data.pageCount;
+        } else {
+          setErrorAlert(`Unable to load "${file.name}": ${inspection.error}`);
+          continue;
         }
-      } catch {
-        // Fallback without page count
+      } catch (err: any) {
+        setErrorAlert(`Unable to load "${file.name}": ${err?.message || 'Unsupported PDF file'}`);
+        continue;
       }
 
       setMergeItems((prev) => [
@@ -108,6 +115,7 @@ export const PdfTools: React.FC = () => {
     setIsMerging(true);
     setMergeProgress(10);
     setMergedResult(null);
+    setErrorAlert(null);
 
     const task = {
       id: `merge-${Date.now()}`,
@@ -133,6 +141,8 @@ export const PdfTools: React.FC = () => {
         size: res.resultSize,
         durationMs: res.durationMs,
       });
+    } else {
+      setErrorAlert(`Merge failed: ${result.error}`);
     }
   };
 
@@ -141,6 +151,7 @@ export const PdfTools: React.FC = () => {
     const pdfFile = files.find((f) => f.type.includes('pdf') || f.name.endsWith('.pdf'));
     if (!pdfFile) return;
 
+    setErrorAlert(null);
     setSplitFile(pdfFile);
     setSplitMetadata(null);
     setSplitResult(null);
@@ -161,11 +172,32 @@ export const PdfTools: React.FC = () => {
         const all = Array.from({ length: inspection.data.pageCount }, (_, i) => i + 1);
         setSelectedPages(all);
         setPageRangeInput(`1-${inspection.data.pageCount}`);
+      } else {
+        setErrorAlert(`Unable to open "${pdfFile.name}": ${inspection.error}`);
+        setSplitFile(null);
       }
+    } catch (err: any) {
+      setErrorAlert(`Unable to open "${pdfFile.name}": ${err?.message || 'Unsupported PDF file'}`);
+      setSplitFile(null);
     } finally {
       setIsInspecting(false);
     }
   };
+
+  React.useEffect(() => {
+    const handleGlobalDrop = (e: Event) => {
+      const files = (e as CustomEvent<File[]>).detail;
+      if (files && files.length > 0) {
+        if (activeTab === 'merge') {
+          handleMergeFilesAdded(files);
+        } else {
+          handleSplitFileAdded(files);
+        }
+      }
+    };
+    window.addEventListener('zeroegress:files-dropped', handleGlobalDrop);
+    return () => window.removeEventListener('zeroegress:files-dropped', handleGlobalDrop);
+  }, [activeTab]);
 
   const handleRangeInputChange = (input: string) => {
     setPageRangeInput(input);
@@ -245,6 +277,8 @@ export const PdfTools: React.FC = () => {
         durationMs: res.durationMs,
         mode: splitMode,
       });
+    } else {
+      setErrorAlert(`Split failed: ${result.error}`);
     }
   };
 
@@ -319,6 +353,31 @@ export const PdfTools: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* User-facing Error Alert Banner */}
+      {errorAlert && (
+        <div className="p-4 rounded-xl border border-rose-900/60 bg-rose-950/30 flex items-start justify-between gap-3 text-xs animate-in fade-in duration-150">
+          <div className="flex items-start gap-2.5 text-rose-300">
+            {errorAlert.toLowerCase().includes('encrypted') || errorAlert.toLowerCase().includes('password') ? (
+              <Lock className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            )}
+            <div>
+              <p className="font-semibold text-rose-200">PDF Document Notice</p>
+              <p className="text-rose-300/90 mt-0.5 font-mono text-[11px]">{errorAlert}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setErrorAlert(null)}
+            className="p-1 rounded text-rose-400 hover:text-rose-200 hover:bg-rose-900/40 cursor-pointer"
+            title="Dismiss error"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* ======================= MERGE VIEW ======================= */}
       {activeTab === 'merge' && (

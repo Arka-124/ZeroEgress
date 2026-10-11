@@ -67,6 +67,23 @@ Zero UI code changes required.
     - **Split Each Page**: Splits every page into an individual 1-page PDF bundled into a ZIP archive.
     - Flexible page range input (e.g. `1-3, 5, 8-10`).
     - **Interactive Visual Page Grid / Chips**: Clickable chips (`p.1`, `p.2`, ...) with live toggle and quick selection presets (All, Odd, Even, Clear).
+    - **Graceful Error Alerts**: Clear user-facing notices for password-protected, encrypted, or corrupted PDFs.
+
+### c) Deep EXIF & Metadata Stripper
+- **Engine**: Pure client-side binary header rewriter and inspection engine (`src/engine/metadata/`).
+- **Capabilities**:
+  - **Audit Inspection**: Scans binary markers to detect sensitive metadata:
+    - **GPS Coordinates**: Exact latitude/longitude, altitude, formatted DMS with one-click copy.
+    - **Camera Hardware**: Manufacturer, device model, and lens specifications.
+    - **Software Fingerprints**: Adobe Photoshop, Lightroom, iOS/Android build tags.
+    - **Timestamps**: Modification, digitization, and capture dates.
+  - **Zero-Metadata Clean State**: Reassuring visual shield state when a file contains zero sensitive metadata.
+  - **Lossless Binary Stripping**: Removes `0xFFE1` APP1 (EXIF/XMP), `0xFFED` APP13 (IPTC), `0xFFFE` (COM) markers from JPEG, text chunks (`tEXt`/`iTXt`/`eXIf`) from PNG, `EXIF`/`XMP ` chunks from WebP, and metadata catalog dictionaries from PDF without lossy transcoding.
+  - **Batch Scrubbing & Consolidated ZIP**: Batch progress indicator with single consolidated ZIP export.
+
+### d) Global UX & Memory Safety
+- **Global Window Drag-and-Drop**: Dragging files anywhere on the browser window activates an overlay and routes dropped files directly into the active tool.
+- **Systematic URL Lifecycle Tracking**: All generated `URL.createObjectURL` references are tracked in `UrlRegistry` and systematically revoked upon removal, clearing, download, or unmount, guaranteeing memory safety during heavy batch runs.
 
 ---
 

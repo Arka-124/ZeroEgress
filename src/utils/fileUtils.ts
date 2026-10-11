@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { urlRegistry } from './urlRegistry.ts';
 
 /**
  * Format raw byte size into human readable string (e.g. 1.2 MB)
@@ -30,14 +31,14 @@ export function replaceExtension(filename: string, newExt: string): string {
  * Trigger download of a Blob in the browser
  */
 export function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
+  const url = urlRegistry.create(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setTimeout(() => urlRegistry.revoke(url), 1000);
 }
 
 /**

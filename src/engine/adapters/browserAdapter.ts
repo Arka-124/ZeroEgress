@@ -3,6 +3,9 @@ import type {
   EngineAdapter,
   ImageConvertTask,
   ImageTargetFormat,
+  MetadataInspectTask,
+  MetadataInspectionReport,
+  MetadataStripTask,
   PdfInspectTask,
   PdfMetadata,
   PdfMergeTask,
@@ -10,6 +13,8 @@ import type {
   TaskResult,
 } from '../types';
 import { replaceExtension, parsePageRange } from '../../utils/fileUtils';
+import { parseFileMetadata } from '../metadata/exifParser';
+import { stripMetadataFromBuffer } from '../metadata/binaryStripper';
 
 export class BrowserAdapter implements EngineAdapter {
   readonly name = 'Browser WebAssembly & Canvas Engine';
@@ -207,6 +212,17 @@ export class BrowserAdapter implements EngineAdapter {
     }
   }
 
+  private formatPdfError(err: any): string {
+    const msg = err?.message?.toLowerCase() || '';
+    if (msg.includes('encrypted') || msg.includes('password') || msg.includes('decrypt')) {
+      return 'Encrypted / Password-Protected PDF: File is encrypted and requires a password to open.';
+    }
+    if (msg.includes('header') || msg.includes('corrupted') || msg.includes('malformed') || msg.includes('trailer') || msg.includes('xref')) {
+      return 'Malformed or Corrupted PDF: File header/structure is damaged and cannot be parsed.';
+    }
+    return err?.message || 'PDF operation failed';
+  }
+
   /**
    * Pure client-side PDF inspection using pdf-lib
    */
@@ -245,7 +261,7 @@ export class BrowserAdapter implements EngineAdapter {
       return {
         taskId: task.id,
         success: false,
-        error: err?.message || 'Could not read PDF metadata',
+        error: this.formatPdfError(err),
         durationMs: Math.round(performance.now() - startTime),
       };
     }
@@ -301,7 +317,7 @@ export class BrowserAdapter implements EngineAdapter {
       return {
         taskId: task.id,
         success: false,
-        error: err?.message || 'PDF Merge operation failed',
+        error: this.formatPdfError(err),
         durationMs: Math.round(performance.now() - startTime),
       };
     }
@@ -393,7 +409,81 @@ export class BrowserAdapter implements EngineAdapter {
       return {
         taskId: task.id,
         success: false,
-        error: err?.message || 'PDF Split operation failed',
+        error: this.formatPdfError(err),
+        durationMs: Math.round(performance.now() - startTime),
+      };
+    }
+  }
+
+  /**
+   * Deep EXIF, XMP, IPTC, and PDF metadata inspection
+   */
+  async inspectMetadata(
+    task: MetadataInspectTask
+  ): Promise<TaskResult<MetadataInspectionReport>> {
+    const startTime = performance.now();
+    try {
+      const report = await parseFileMetadata(task.file, task.fileName);
+      return {
+        taskId: task.id,
+        success: true,
+        data: report,
+        outputFileName: task.fileName,
+        outputMimeType: task.file.type || 'application/octet-stream',
+        durationMs: Math.round(performance.now() - startTime),
+        originalSize: task.file.size,
+        resultSize: task.file.size,
+      };
+    } catch (err: any) {
+      return {
+        taskId: task.id,
+        success: false,
+        error: err?.message || 'Metadata inspection failed',
+        durationMs: Math.round(performance.now() - startTime),
+      };
+    }
+  }
+
+  /**
+   * Pure client-side lossless stripping of EXIF, XMP, IPTC, and container metadata
+   */
+  async stripMetadata(
+    task: MetadataStripTask,
+    onProgress?: (ratio: number) => void
+  ): Promise<TaskResult<Blob>> {
+    const startTime = performance.now();
+    const originalSize = task.file.size;
+    onProgress?.(0.2);
+
+    try {
+      const buffer = await task.file.arrayBuffer();
+      onProgress?.(0.5);
+
+      const { cleanBytes, mimeType } = await stripMetadataFromBuffer(buffer, task.fileName);
+      onProgress?.(0.85);
+
+      const blob = new Blob([cleanBytes as Uint8Array<ArrayBuffer>], {
+        type: mimeType || task.file.type || 'application/octet-stream',
+      });
+
+      const cleanFileName = task.fileName.replace(/(\.[^.]+)$/, '_clean$1');
+      onProgress?.(1.0);
+
+      return {
+        taskId: task.id,
+        success: true,
+        data: blob,
+        outputFileName: cleanFileName,
+        outputMimeType: blob.type,
+        durationMs: Math.round(performance.now() - startTime),
+        originalSize,
+        resultSize: blob.size,
+      };
+    } catch (err: any) {
+      return {
+        taskId: task.id,
+        success: false,
+        error: err?.message || 'Metadata stripping failed',
         durationMs: Math.round(performance.now() - startTime),
       };
     }

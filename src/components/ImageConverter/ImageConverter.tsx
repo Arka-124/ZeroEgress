@@ -15,6 +15,7 @@ import { Badge } from '../ui/Badge';
 import { engine } from '../../engine';
 import type { ImageTargetFormat, ImageConvertTask, TaskResultSuccess } from '../../engine/types';
 import { formatBytes, downloadBlob, downloadZip } from '../../utils/fileUtils';
+import { urlRegistry } from '../../utils/urlRegistry';
 
 interface ImageItem {
   id: string;
@@ -40,12 +41,22 @@ export const ImageConverter: React.FC = () => {
   const [resizeWidth, setResizeWidth] = useState<string>('');
   const [resizeHeight, setResizeHeight] = useState<string>('');
   const [isProcessingAll, setIsProcessingAll] = useState<boolean>(false);
+  const [batchProgress, setBatchProgress] = useState<number>(0);
   const [supportedFormats, setSupportedFormats] = useState<Record<ImageTargetFormat, boolean>>({
     'image/png': true,
     'image/jpeg': true,
     'image/webp': true,
     'image/avif': true,
   });
+
+  // Systematic cleanup of object URLs on unmount
+  useEffect(() => {
+    return () => {
+      items.forEach((i) => {
+        if (i.previewUrl) urlRegistry.revoke(i.previewUrl);
+      });
+    };
+  }, [items]);
 
   // Probe client browser capabilities on mount
   useEffect(() => {
@@ -66,7 +77,7 @@ export const ImageConverter: React.FC = () => {
     if (validImageFiles.length === 0) return;
 
     const newItems: ImageItem[] = validImageFiles.map((file) => {
-      const previewUrl = URL.createObjectURL(file);
+      const previewUrl = urlRegistry.create(file);
       const item: ImageItem = {
         id: `${file.name}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
         file,
@@ -90,6 +101,17 @@ export const ImageConverter: React.FC = () => {
 
     setItems((prev) => [...prev, ...newItems]);
   };
+
+  useEffect(() => {
+    const handleGlobalDrop = (e: Event) => {
+      const files = (e as CustomEvent<File[]>).detail;
+      if (files && files.length > 0) {
+        handleFilesSelected(files);
+      }
+    };
+    window.addEventListener('zeroegress:files-dropped', handleGlobalDrop);
+    return () => window.removeEventListener('zeroegress:files-dropped', handleGlobalDrop);
+  }, []);
 
   // Convert a single image
   const convertSingle = async (item: ImageItem) => {
@@ -156,13 +178,29 @@ export const ImageConverter: React.FC = () => {
 
   // Convert all pending or idle images
   const convertAll = async () => {
+    const pendingItems = items.filter((i) => i.status !== 'completed');
+    if (pendingItems.length === 0) return;
+
     setIsProcessingAll(true);
-    for (const item of items) {
-      if (item.status !== 'completed') {
-        await convertSingle(item);
-      }
+    setBatchProgress(0);
+
+    for (let idx = 0; idx < pendingItems.length; idx++) {
+      const item = pendingItems[idx];
+      await convertSingle(item);
+      setBatchProgress(Math.round(((idx + 1) / pendingItems.length) * 100));
     }
+
     setIsProcessingAll(false);
+
+    // If more than 1 file converted, trigger single consolidated ZIP download
+    const allCompleted = items.filter((i) => i.resultBlob && i.resultFileName);
+    if (allCompleted.length > 1) {
+      const filesToZip = allCompleted.map((i) => ({
+        name: i.resultFileName!,
+        blob: i.resultBlob!,
+      }));
+      await downloadZip(filesToZip, `zeroegress_converted_${Date.now()}.zip`);
+    }
   };
 
   // Download single item
@@ -185,21 +223,21 @@ export const ImageConverter: React.FC = () => {
     await downloadZip(filesToZip, `zeroegress_converted_${Date.now()}.zip`);
   };
 
-  // Remove single item
+  // Remove single item with memory-safe URL revocation
   const removeItem = (id: string) => {
     setItems((prev) => {
       const target = prev.find((i) => i.id === id);
       if (target?.previewUrl) {
-        URL.revokeObjectURL(target.previewUrl);
+        urlRegistry.revoke(target.previewUrl);
       }
       return prev.filter((i) => i.id !== id);
     });
   };
 
-  // Clear all items
+  // Clear all items with memory-safe URL revocation
   const clearAll = () => {
     items.forEach((i) => {
-      if (i.previewUrl) URL.revokeObjectURL(i.previewUrl);
+      if (i.previewUrl) urlRegistry.revoke(i.previewUrl);
     });
     setItems([]);
   };
@@ -405,7 +443,7 @@ export const ImageConverter: React.FC = () => {
               icon={<RefreshCw className="w-3.5 h-3.5" />}
               className="flex-1 sm:flex-initial"
             >
-              {isProcessingAll ? 'Converting...' : 'Convert All Files'}
+              {isProcessingAll ? `Converting (${batchProgress}%)` : 'Convert All Files'}
             </Button>
           </div>
         </div>
