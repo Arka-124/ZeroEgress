@@ -11,10 +11,15 @@ import type {
   PdfMergeTask,
   PdfSplitTask,
   TaskResult,
+  DataFormat,
+  DataOptions,
+  HashAlgorithm,
 } from '../types';
-import { replaceExtension, parsePageRange } from '../../utils/fileUtils';
-import { parseFileMetadata } from '../metadata/exifParser';
-import { stripMetadataFromBuffer } from '../metadata/binaryStripper';
+import { replaceExtension, parsePageRange } from '../../utils/fileUtils.ts';
+import { parseFileMetadata } from '../metadata/exifParser.ts';
+import { stripMetadataFromBuffer } from '../metadata/binaryStripper.ts';
+import { convertData as engineConvertData } from '../data/dataConverter.ts';
+import { md5 } from '../crypto/md5.ts';
 
 export class BrowserAdapter implements EngineAdapter {
   readonly name = 'Browser WebAssembly & Canvas Engine';
@@ -488,4 +493,38 @@ export class BrowserAdapter implements EngineAdapter {
       };
     }
   }
+
+  /**
+   * Universal structured data converter (JSON ↔ CSV ↔ YAML)
+   */
+  convertData(
+    content: string,
+    from: DataFormat,
+    to: DataFormat,
+    options: DataOptions = {}
+  ): string {
+    return engineConvertData(content, from, to, options);
+  }
+
+  /**
+   * Cryptographic hash computation using Web Crypto API and MD5 fallback
+   */
+  async computeHash(
+    buffer: ArrayBuffer,
+    algorithm: HashAlgorithm
+  ): Promise<string> {
+    if (algorithm === 'MD5') {
+      return md5(buffer);
+    }
+
+    const subtle = globalThis.crypto?.subtle;
+    if (!subtle) {
+      throw new Error('Web Cryptography API (crypto.subtle) is unavailable in this environment.');
+    }
+
+    const hashBuffer = await subtle.digest(algorithm, buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
 }
+

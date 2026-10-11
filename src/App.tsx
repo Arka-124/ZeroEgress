@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { ImageIcon, FileText, Shield, ShieldAlert, UploadCloud } from 'lucide-react';
+import { ImageIcon, FileText, Shield, ShieldAlert, UploadCloud, Code2 } from 'lucide-react';
 import { Header } from './components/Header';
 import { ImageConverter } from './components/ImageConverter/ImageConverter';
 import { PdfTools } from './components/PdfTools/PdfTools';
 import { MetadataScrubber } from './components/MetadataScrubber/MetadataScrubber';
+import { DataTools } from './components/DataTools/DataTools';
 import { PrivacyInfo } from './components/PrivacyInfo';
 
-type ActiveTool = 'image' | 'pdf' | 'metadata';
+type ActiveTool = 'image' | 'pdf' | 'metadata' | 'data';
 
 const activeToolTitles: Record<ActiveTool, string> = {
   image: 'Instant Image Converter',
   pdf: 'PDF Split & Merge',
   metadata: 'Metadata Stripper',
+  data: 'Data & Hashes',
 };
 
 export const App: React.FC = () => {
@@ -165,6 +167,28 @@ export const App: React.FC = () => {
                 GPS / EXIF
               </span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTool('data')}
+              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer ${
+                activeTool === 'data'
+                  ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+              }`}
+            >
+              <Code2 className="w-4 h-4 text-sky-400" />
+              <span>Data & Hashes</span>
+              <span
+                className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition-colors ${
+                  activeTool === 'data'
+                    ? 'bg-zinc-300 text-zinc-950 font-semibold'
+                    : 'bg-zinc-800 text-zinc-400'
+                }`}
+              >
+                JSON / CSV / SHA
+              </span>
+            </button>
           </div>
 
           {/* Quick Architecture Callout */}
@@ -189,6 +213,7 @@ export const App: React.FC = () => {
           {activeTool === 'image' && <ImageConverter />}
           {activeTool === 'pdf' && <PdfTools />}
           {activeTool === 'metadata' && <MetadataScrubber />}
+          {activeTool === 'data' && <DataTools />}
         </div>
       </main>
 

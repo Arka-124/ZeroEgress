@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "js-yaml": "^5.4.3",
     "jszip": "^3.10.2",
     "lucide-react": "^1.55.0",
     "pdf-lib": "^1.17.1",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "@types/js-yaml": "^4.0.9",
     "@types/jszip": "^3.4.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",

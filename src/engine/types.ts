@@ -159,6 +159,16 @@ export interface PdfMetadata {
   pages: PdfPageInfo[];
 }
 
+export type DataFormat = 'json' | 'csv' | 'yaml';
+
+export interface DataOptions {
+  delimiter?: ',' | ';' | '\t' | string;
+  indent?: number;
+  minify?: boolean;
+}
+
+export type HashAlgorithm = 'SHA-256' | 'SHA-512' | 'MD5';
+
 export interface EngineAdapter {
   readonly name: string;
   readonly isAirGapped: boolean; // Indicates 100% client-side zero-server upload
@@ -169,5 +179,16 @@ export interface EngineAdapter {
   inspectPdf(task: PdfInspectTask): Promise<TaskResult<PdfMetadata>>;
   inspectMetadata(task: MetadataInspectTask): Promise<TaskResult<MetadataInspectionReport>>;
   stripMetadata(task: MetadataStripTask, onProgress?: (ratio: number) => void): Promise<TaskResult<Blob>>;
+  convertData(
+    content: string,
+    from: DataFormat,
+    to: DataFormat,
+    options?: DataOptions
+  ): string;
+  computeHash(
+    buffer: ArrayBuffer,
+    algorithm: HashAlgorithm
+  ): Promise<string>;
   isFormatSupported(format: ImageTargetFormat): Promise<boolean>;
 }
+
