@@ -1,6 +1,6 @@
 [package]
 name = "zeroegress"
-version = "1.0.0"
+version = "3.0.0"
 description = "ZeroEgress — Air-Gapped Client-Side File Utilities"
 authors = ["ZeroEgress Team"]
 edition = "2021"
