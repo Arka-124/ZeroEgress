@@ -472,11 +472,11 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center p-1 rounded-lg border border-zinc-800 bg-zinc-900/60 self-start sm:self-auto">
+        <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg border border-zinc-800 bg-zinc-900/60 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setActiveTab('merge')}
-            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
               activeTab === 'merge'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200'
@@ -494,7 +494,7 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
           <button
             type="button"
             onClick={() => setActiveTab('split')}
-            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
               activeTab === 'split'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200'
@@ -512,7 +512,7 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
           <button
             type="button"
             onClick={() => setActiveTab('compress')}
-            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
               activeTab === 'compress'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200'
@@ -525,7 +525,7 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
           <button
             type="button"
             onClick={() => setActiveTab('redact')}
-            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
               activeTab === 'redact'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200'
@@ -543,7 +543,7 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
           <button
             type="button"
             onClick={() => setActiveTab('ocr')}
-            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
               activeTab === 'ocr'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200'

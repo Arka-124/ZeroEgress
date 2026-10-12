@@ -87,7 +87,7 @@ export const Dropzone: React.FC<DropzoneProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={() => fileInputRef.current?.click()}
-      className={`relative group cursor-pointer border border-dashed rounded-xl p-8 transition-all duration-200 text-center select-none ${
+      className={`relative group cursor-pointer border border-dashed rounded-xl p-5 sm:p-8 transition-all duration-200 text-center select-none ${
         isDragging
           ? 'border-zinc-300 bg-zinc-900/80 scale-[1.005]'
           : 'border-zinc-800 bg-zinc-950/40 hover:border-zinc-700 hover:bg-zinc-900/30'
@@ -118,7 +118,7 @@ export const Dropzone: React.FC<DropzoneProps> = ({
           <p className="text-xs text-zinc-500 mt-1">{subtitle}</p>
         </div>
 
-        <div className="flex items-center gap-2 pt-1 text-[11px] text-zinc-500 font-mono">
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] text-zinc-500 font-mono text-center">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
           <span>{hint}</span>
           <span className="text-zinc-600">·</span>

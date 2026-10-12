@@ -291,19 +291,21 @@ export const DataTools: React.FC = () => {
     <div className="space-y-6">
       {/* Sub-navigation pills */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
-        <div className="inline-flex p-1 rounded-lg border border-zinc-800 bg-zinc-900/50 self-start">
+        <div className="flex flex-col sm:inline-flex sm:flex-row p-1 rounded-lg border border-zinc-800 bg-zinc-900/50 w-full sm:w-auto gap-1">
           <button
             type="button"
             onClick={() => setActiveSubTool('converter')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+            className={`flex items-center justify-between sm:justify-start gap-2 px-3.5 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[40px] sm:min-h-[36px] w-full sm:w-auto ${
               activeSubTool === 'converter'
                 ? 'bg-zinc-200 text-zinc-950 font-semibold shadow-sm'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
             }`}
           >
-            <ArrowRightLeft className="w-3.5 h-3.5" />
-            <span>Structured Data Converter</span>
-            <span className="text-[10px] font-mono px-1 rounded bg-zinc-800 text-zinc-400 ml-1">
+            <div className="flex items-center gap-2">
+              <ArrowRightLeft className="w-3.5 h-3.5 shrink-0" />
+              <span>Structured Data Converter</span>
+            </div>
+            <span className="text-[10px] font-mono px-1 rounded bg-zinc-800 text-zinc-400 shrink-0">
               JSON · CSV · YAML
             </span>
           </button>
@@ -311,15 +313,17 @@ export const DataTools: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveSubTool('hasher')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+            className={`flex items-center justify-between sm:justify-start gap-2 px-3.5 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[40px] sm:min-h-[36px] w-full sm:w-auto ${
               activeSubTool === 'hasher'
                 ? 'bg-zinc-200 text-zinc-950 font-semibold shadow-sm'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
             }`}
           >
-            <Hash className="w-3.5 h-3.5" />
-            <span>Cryptographic File Hasher</span>
-            <span className="text-[10px] font-mono px-1 rounded bg-zinc-800 text-zinc-400 ml-1">
+            <div className="flex items-center gap-2">
+              <Hash className="w-3.5 h-3.5 shrink-0" />
+              <span>Cryptographic File Hasher</span>
+            </div>
+            <span className="text-[10px] font-mono px-1 rounded bg-zinc-800 text-zinc-400 shrink-0">
               SHA-256 · MD5
             </span>
           </button>

@@ -583,14 +583,14 @@ export const MetadataScrubber: React.FC = () => {
                       <span className="text-[11px] font-mono text-zinc-500 block">
                         Full Tag Audit Log ({selectedItem.report.tags.length} entries):
                       </span>
-                      <div className="max-h-40 overflow-y-auto space-y-1 p-2 rounded-lg bg-zinc-950/80 border border-zinc-800 font-mono text-[11px]">
+                      <div className="w-full max-h-40 overflow-y-auto overflow-x-auto space-y-1 p-2 rounded-lg bg-zinc-950/80 border border-zinc-800 font-mono text-[11px]">
                         {selectedItem.report.tags.map((t, idx) => (
                           <div
                             key={idx}
-                            className="flex items-center justify-between py-1 border-b border-zinc-900 last:border-0"
+                            className="flex items-center justify-between gap-2 py-1 border-b border-zinc-900 last:border-0"
                           >
-                            <span className="text-zinc-400">{t.label}:</span>
-                            <span className="text-zinc-200 font-medium max-w-xs truncate text-right">
+                            <span className="text-zinc-400 shrink-0">{t.label}:</span>
+                            <span className="text-zinc-200 font-medium max-w-[160px] sm:max-w-xs truncate text-right">
                               {t.value}
                             </span>
                           </div>

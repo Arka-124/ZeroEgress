@@ -214,9 +214,9 @@ export const SpreadsheetConverter: React.FC = () => {
           {/* Interactive Table Preview (First 20-25 rows) */}
           {currentSheetInfo && (
             <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <Table className="w-4 h-4 text-emerald-400" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Table className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span className="font-semibold text-zinc-200">
                     Table Preview: "{activeSheet}"
                   </span>
@@ -224,13 +224,13 @@ export const SpreadsheetConverter: React.FC = () => {
                     {currentSheetInfo.rowCount} total rows · {currentSheetInfo.colCount} columns
                   </Badge>
                 </div>
-                <span className="text-[11px] font-mono text-zinc-500">
+                <span className="text-[11px] font-mono text-zinc-500 shrink-0">
                   Showing first {Math.min(25, currentSheetInfo.previewRows.length)} rows
                 </span>
               </div>
 
               {/* Scrollable table view */}
-              <div className="max-h-64 overflow-x-auto overflow-y-auto border border-zinc-800/80 rounded-lg bg-zinc-950/80">
+              <div className="w-full max-w-full overflow-x-auto overflow-y-auto max-h-64 rounded-lg border border-zinc-800 bg-zinc-950/80">
                 {currentSheetInfo.previewRows.length > 0 ? (
                   <table className="w-full text-left text-[11px] font-mono text-zinc-300 divide-y divide-zinc-800">
                     {/* Header Row */}
@@ -291,14 +291,14 @@ export const SpreadsheetConverter: React.FC = () => {
                 <label className="text-xs font-medium text-zinc-300 block mb-2">
                   Target Export Format:
                 </label>
-                <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5 p-1 bg-zinc-950 border border-zinc-800 rounded-lg">
+                <div className="flex flex-wrap sm:grid sm:grid-cols-7 gap-1.5 p-1 bg-zinc-950 border border-zinc-800 rounded-lg">
                   {(['csv', 'xlsx', 'json', 'ods', 'xls', 'tsv', 'html'] as SpreadsheetFormat[]).map(
                     (fmt) => (
                       <button
                         key={fmt}
                         type="button"
                         onClick={() => setTargetFormat(fmt)}
-                        className={`py-1.5 text-xs font-mono font-medium rounded transition-all cursor-pointer ${
+                        className={`flex-1 sm:flex-initial min-w-[60px] sm:min-w-0 py-2 sm:py-1.5 text-xs font-mono font-medium rounded transition-all cursor-pointer text-center min-h-[38px] flex items-center justify-center ${
                           targetFormat === fmt
                             ? 'bg-zinc-200 text-zinc-950 font-bold shadow-sm'
                             : 'text-zinc-400 hover:text-zinc-200'

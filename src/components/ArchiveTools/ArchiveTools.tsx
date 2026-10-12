@@ -196,14 +196,14 @@ export const ArchiveTools: React.FC = () => {
         </div>
 
         {/* Subtabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-zinc-900 border border-zinc-800 rounded-lg">
+        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-zinc-900 border border-zinc-800 rounded-lg w-full sm:w-auto">
           <button
             type="button"
             onClick={() => {
               setActiveTab('create');
               setErrorAlert(null);
             }}
-            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
               activeTab === 'create'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200'
@@ -224,7 +224,7 @@ export const ArchiveTools: React.FC = () => {
               setActiveTab('extract');
               setErrorAlert(null);
             }}
-            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
               activeTab === 'extract'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200'
