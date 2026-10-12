@@ -21,6 +21,7 @@ import {
   Hash,
   Layers,
   Compass,
+  Zap,
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { ImageConverter } from './components/ImageConverter/ImageConverter';
@@ -33,6 +34,7 @@ import { ArchitectureModal } from './components/Architecture/ArchitectureModal';
 import { SHOW_LICENSE_UI } from './engine/license/licenseVerifier';
 
 // Lazy-load heavier utilities to keep initial bundle small & fast
+const UniversalConverter = React.lazy(() => import('./components/UniversalConverter/UniversalConverter'));
 const MediaTools = React.lazy(() => import('./components/MediaTools/MediaTools'));
 const VideoGifFrames = React.lazy(() => import('./components/MediaTools/VideoGifFrames'));
 const ArchiveTools = React.lazy(() => import('./components/ArchiveTools/ArchiveTools'));
@@ -56,8 +58,8 @@ const PdfSecurity = React.lazy(() =>
 );
 const HashAuditTool = React.lazy(() => import('./components/Privacy/HashAuditTool'));
 
-// 5 Master Categories
-export type MasterCategory = 'documents' | 'images' | 'media' | 'data' | 'privacy';
+// Master Categories
+export type MasterCategory = 'universal' | 'documents' | 'images' | 'media' | 'data' | 'privacy';
 
 // Sub-tools for each category
 export type DocumentsSubTool = 'pdf' | 'pdfa' | 'ebooks' | 'capture';
@@ -67,6 +69,7 @@ export type DataSubTool = 'archives' | 'spreadsheet' | 'structured';
 export type PrivacySubTool = 'ocr' | 'security' | 'redact' | 'metadata' | 'hash_audit';
 
 const categoryTitles: Record<MasterCategory, string> = {
+  universal: '⚡ Universal Converter',
   documents: 'Documents & PDF Studio',
   images: 'Images & Visual Design',
   media: 'Video & Audio Transcoder',
@@ -82,8 +85,8 @@ const LoadingSpinner: React.FC<{ label: string }> = ({ label }) => (
 );
 
 export const App: React.FC = () => {
-  // Navigation State: 5 Master Categories
-  const [activeCategory, setActiveCategory] = useState<MasterCategory>('documents');
+  // Navigation State: Flagship Universal Converter + 5 Specialized Pillars
+  const [activeCategory, setActiveCategory] = useState<MasterCategory>('universal');
 
   // Active sub-tool state for each pillar
   const [docSubTool, setDocSubTool] = useState<DocumentsSubTool>('pdf');
@@ -202,12 +205,35 @@ export const App: React.FC = () => {
 
       {/* Main Container */}
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 xl:px-16 py-6 sm:py-8 space-y-6 sm:space-y-8">
-        {/* Strictly 5 Master Categories Navigation Bar (Single Row, No Clutter) */}
+        {/* Master Navigation Bar (Single Row, No Clutter) */}
         <nav
           aria-label="Master Categories"
           className="w-full flex items-center justify-between sm:justify-center gap-1.5 sm:gap-2.5 lg:gap-3 p-1.5 sm:p-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm shadow-lg overflow-x-auto sm:overflow-visible no-scrollbar"
         >
-          {/* 1. Documents & PDF */}
+          {/* 1. ⚡ Universal Converter (Flagship) */}
+          <button
+            type="button"
+            onClick={() => setActiveCategory('universal')}
+            className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2 text-xs font-medium rounded-xl transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[38px] flex-1 sm:flex-none ${
+              activeCategory === 'universal'
+                ? 'bg-amber-400 text-zinc-950 shadow-md font-bold'
+                : 'text-zinc-300 hover:text-white hover:bg-zinc-800/40'
+            }`}
+          >
+            <Zap className={`w-4 h-4 shrink-0 ${activeCategory === 'universal' ? 'text-zinc-950 fill-zinc-950' : 'text-amber-400 fill-amber-400'}`} />
+            <span className="truncate">⚡ Universal Converter</span>
+            <span
+              className={`hidden md:inline text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors shrink-0 ${
+                activeCategory === 'universal'
+                  ? 'bg-amber-500 text-zinc-950 font-bold'
+                  : 'bg-zinc-800 text-amber-400'
+              }`}
+            >
+              200+
+            </span>
+          </button>
+
+          {/* 2. Documents & PDF */}
           <button
             type="button"
             onClick={() => setActiveCategory('documents')}
@@ -325,6 +351,15 @@ export const App: React.FC = () => {
 
         {/* Active Workspace View */}
         <div className="rounded-2xl border border-zinc-800/80 bg-zinc-950/40 p-4 sm:p-6 md:p-8 backdrop-blur-sm shadow-xl w-full">
+          {/* ======================================================== */}
+          {/* 0. ⚡ UNIVERSAL CONVERTER WORKSPACE (FLAGSHIP) */}
+          {/* ======================================================== */}
+          {activeCategory === 'universal' && (
+            <React.Suspense fallback={<LoadingSpinner label="Loading Universal Conversion Engine..." />}>
+              <UniversalConverter />
+            </React.Suspense>
+          )}
+
           {/* ======================================================== */}
           {/* 1. DOCUMENTS & PDF WORKSPACE */}
           {/* ======================================================== */}

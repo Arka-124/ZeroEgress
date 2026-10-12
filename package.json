@@ -23,6 +23,7 @@
     "opentype.js": "^2.0.0",
     "pdf-lib": "^1.17.1",
     "pdf-lib-encrypt": "^1.0.3",
+    "pdfjs-dist": "^6.4.299",
     "potrace-wasm": "^1.0.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
