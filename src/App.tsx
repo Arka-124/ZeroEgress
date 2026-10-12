@@ -13,6 +13,7 @@ import {
   Archive,
   FileSpreadsheet,
 } from 'lucide-react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Header } from './components/Header';
 import { ImageConverter } from './components/ImageConverter/ImageConverter';
 import { PdfTools } from './components/PdfTools/PdfTools';
@@ -461,6 +462,7 @@ export const App: React.FC = () => {
           window.dispatchEvent(new CustomEvent('zeroegress:license-updated'));
         }}
       />
+      <SpeedInsights />
     </div>
   );
 };
