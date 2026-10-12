@@ -28,8 +28,15 @@ import {
   type SvgOptimizeResult,
 } from '../../engine/vector/vectorEngine';
 
-export const VectorFontTools: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'font' | 'vector' | 'svgo'>('font');
+export interface VectorFontToolsProps {
+  initialTab?: 'font' | 'vector' | 'svgo';
+  filterTabs?: ('font' | 'vector' | 'svgo')[];
+}
+
+export const VectorFontTools: React.FC<VectorFontToolsProps> = ({ initialTab, filterTabs }) => {
+  const [selectedTab, setSelectedTab] = useState<'font' | 'vector' | 'svgo' | null>(null);
+  const activeTab = selectedTab || initialTab || (filterTabs && filterTabs[0]) || 'font';
+  const setActiveTab = (tab: 'font' | 'vector' | 'svgo') => setSelectedTab(tab);
 
   // ===================== FONT CONVERTER STATE =====================
   const [fontFile, setFontFile] = useState<File | null>(null);
@@ -175,52 +182,70 @@ export const VectorFontTools: React.FC = () => {
         <div>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-100 flex items-center gap-2">
             <Type className="w-5 h-5 text-emerald-400" />
-            <span>Fonts, Vectors & SVG Studio</span>
+            <span>
+              {filterTabs?.includes('font') && filterTabs.length === 1
+                ? 'Font Converter & Typography Inspector'
+                : filterTabs && !filterTabs.includes('font')
+                ? 'Vector Tracing & SVG Optimizer'
+                : 'Fonts, Vectors & SVG Studio'}
+            </span>
           </h2>
           <p className="text-xs text-zinc-400 mt-1">
-            Convert TTF/OTF/WOFF/WOFF2 web fonts, trace raster images to scalable SVG vectors, and optimize SVG assets.
+            {filterTabs?.includes('font') && filterTabs.length === 1
+              ? 'Inspect font metrics, preview typography in real-time, and convert between TTF, OTF, WOFF, and WOFF2.'
+              : filterTabs && !filterTabs.includes('font')
+              ? 'Trace bitmap images to scalable vector SVGs using Potrace WASM and sanitize/minify SVGs via SVGO.'
+              : 'Convert TTF/OTF/WOFF/WOFF2 web fonts, trace raster images to scalable SVG vectors, and optimize SVG assets.'}
           </p>
         </div>
 
-        {/* Tab Controls */}
-        <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg border border-zinc-800 bg-zinc-900/60">
-          <button
-            type="button"
-            onClick={() => setActiveTab('font')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
-              activeTab === 'font'
-                ? 'bg-zinc-100 text-zinc-950 font-semibold shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Type className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Font Converter</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('vector')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
-              activeTab === 'vector'
-                ? 'bg-zinc-100 text-zinc-950 font-semibold shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-sky-400" />
-            <span>Vector Tracing</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('svgo')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
-              activeTab === 'svgo'
-                ? 'bg-zinc-100 text-zinc-950 font-semibold shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>SVG Optimizer</span>
-          </button>
-        </div>
+        {/* Tab Controls - only show if multiple tabs permitted */}
+        {(!filterTabs || filterTabs.length > 1) && (
+          <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg border border-zinc-800 bg-zinc-900/60">
+            {(!filterTabs || filterTabs.includes('font')) && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('font')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+                  activeTab === 'font'
+                    ? 'bg-zinc-100 text-zinc-950 font-semibold shadow-sm'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <Type className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Font Converter</span>
+              </button>
+            )}
+            {(!filterTabs || filterTabs.includes('vector')) && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('vector')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+                  activeTab === 'vector'
+                    ? 'bg-zinc-100 text-zinc-950 font-semibold shadow-sm'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5 text-sky-400" />
+                <span>Vector Tracing</span>
+              </button>
+            )}
+            {(!filterTabs || filterTabs.includes('svgo')) && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('svgo')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+                  activeTab === 'svgo'
+                    ? 'bg-zinc-100 text-zinc-950 font-semibold shadow-sm'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>SVG Optimizer</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ======================= TAB 1: FONT CONVERTER ======================= */}

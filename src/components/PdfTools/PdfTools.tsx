@@ -40,10 +40,14 @@ type PdfToolMode = 'merge' | 'split' | 'compress' | 'rotate' | 'security' | 'wat
 export interface PdfToolsProps {
   onOpenLicense?: () => void;
   initialTab?: PdfToolMode;
+  filterModes?: PdfToolMode[];
 }
 
-export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense, initialTab }) => {
-  const [activeTab, setActiveTab] = useState<PdfToolMode>(initialTab || 'merge');
+export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense, initialTab, filterModes }) => {
+  const [selectedTab, setSelectedTab] = useState<PdfToolMode | null>(null);
+  const activeTab = selectedTab || initialTab || (filterModes && filterModes[0]) || 'merge';
+  const setActiveTab = (tab: PdfToolMode) => setSelectedTab(tab);
+
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [hasVectorLic, setHasVectorLic] = useState(true);
   useEffect(() => {
@@ -402,155 +406,185 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense, initialTab })
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/80">
         <div>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-100 flex items-center gap-2">
-            <span>PDF Split & Merge</span>
+            <span>
+              {filterModes?.includes('compress') || filterModes?.includes('rotate')
+                ? 'PDF Compress & Rotate'
+                : filterModes?.includes('security') || filterModes?.includes('watermark')
+                ? 'PDF Security & Watermark'
+                : 'PDF Split & Merge'}
+            </span>
             <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
               pdf-lib WebAssembly / JS
             </span>
           </h2>
           <p className="text-xs text-zinc-400 mt-1">
-            Reorder, merge, split, and extract PDF pages directly in your browser without cloud uploads.
+            {filterModes?.includes('compress') || filterModes?.includes('rotate')
+              ? 'Compress file sizes and rotate page orientation permanently in your browser.'
+              : filterModes?.includes('security') || filterModes?.includes('watermark')
+              ? 'Lock with AES-256 passwords and stamp customizable text/logo watermarks.'
+              : 'Reorder, merge, split, and extract PDF pages directly in your browser without cloud uploads.'}
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg border border-zinc-800 bg-zinc-900/60 w-full sm:w-auto">
-          <button
-            type="button"
-            onClick={() => setActiveTab('merge')}
-            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
-              activeTab === 'merge'
-                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Files className="w-3.5 h-3.5" />
-            <span>Merge PDFs</span>
-            {mergeItems.length > 0 && (
-              <span className="text-[10px] px-1 rounded bg-zinc-800 text-zinc-300 font-mono">
-                {mergeItems.length}
-              </span>
+        {/* Tab Switcher - only show if multiple modes are permitted */}
+        {(!filterModes || filterModes.length > 1) && (
+          <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg border border-zinc-800 bg-zinc-900/60 w-full sm:w-auto">
+            {(!filterModes || filterModes.includes('merge')) && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('merge')}
+                className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
+                  activeTab === 'merge'
+                    ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <Files className="w-3.5 h-3.5" />
+                <span>Merge PDFs</span>
+                {mergeItems.length > 0 && (
+                  <span className="text-[10px] px-1 rounded bg-zinc-800 text-zinc-300 font-mono">
+                    {mergeItems.length}
+                  </span>
+                )}
+              </button>
             )}
-          </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('split')}
-            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
-              activeTab === 'split'
-                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Scissors className="w-3.5 h-3.5" />
-            <span>Split & Extract</span>
-            {splitFile && (
-              <span className="text-[10px] px-1 rounded bg-zinc-800 text-zinc-300 font-mono">
-                Active
-              </span>
+            {(!filterModes || filterModes.includes('split')) && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('split')}
+                className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
+                  activeTab === 'split'
+                    ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <Scissors className="w-3.5 h-3.5" />
+                <span>Split & Extract</span>
+                {splitFile && (
+                  <span className="text-[10px] px-1 rounded bg-zinc-800 text-zinc-300 font-mono">
+                    Active
+                  </span>
+                )}
+              </button>
             )}
-          </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('compress')}
-            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
-              activeTab === 'compress'
-                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Minimize2 className="w-3.5 h-3.5 text-blue-400" />
-            <span>Compress PDF</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('rotate')}
-            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
-              activeTab === 'rotate'
-                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <RotateCw className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Rotate</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('watermark')}
-            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
-              activeTab === 'watermark'
-                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Stamp className="w-3.5 h-3.5 text-purple-400" />
-            <span>Watermark</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('security')}
-            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
-              activeTab === 'security'
-                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
-            <span>Security</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('redact')}
-            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
-              activeTab === 'redact'
-                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Eraser className="w-3.5 h-3.5 text-rose-400" />
-            <span>Vector Redact</span>
-            {SHOW_PRO_BADGES && (
-              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-300 font-bold">
-                PRO
-              </span>
+            {(!filterModes || filterModes.includes('compress')) && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('compress')}
+                className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
+                  activeTab === 'compress'
+                    ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <Minimize2 className="w-3.5 h-3.5 text-blue-400" />
+                <span>Compress PDF</span>
+              </button>
             )}
-          </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('ocr')}
-            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
-              activeTab === 'ocr'
-                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <ScanText className="w-3.5 h-3.5 text-amber-400" />
-            <span>On-Device OCR</span>
-            {SHOW_PRO_BADGES && (
-              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-300 font-bold">
-                PRO
-              </span>
+            {(!filterModes || filterModes.includes('rotate')) && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('rotate')}
+                className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
+                  activeTab === 'rotate'
+                    ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <RotateCw className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Rotate</span>
+              </button>
             )}
-          </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('pdfa')}
-            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
-              activeTab === 'pdfa'
-                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            <Archive className="w-3.5 h-3.5 text-indigo-400" />
-            <span>PDF/A Archival</span>
-          </button>
-        </div>
+            {(!filterModes || filterModes.includes('watermark')) && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('watermark')}
+                className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
+                  activeTab === 'watermark'
+                    ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <Stamp className="w-3.5 h-3.5 text-purple-400" />
+                <span>Watermark</span>
+              </button>
+            )}
+
+            {(!filterModes || filterModes.includes('security')) && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('security')}
+                className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
+                  activeTab === 'security'
+                    ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+                <span>Security</span>
+              </button>
+            )}
+
+            {(!filterModes || filterModes.includes('redact')) && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('redact')}
+                className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
+                  activeTab === 'redact'
+                    ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <Eraser className="w-3.5 h-3.5 text-rose-400" />
+                <span>Vector Redact</span>
+                {SHOW_PRO_BADGES && (
+                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-300 font-bold">
+                    PRO
+                  </span>
+                )}
+              </button>
+            )}
+
+            {(!filterModes || filterModes.includes('ocr')) && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('ocr')}
+                className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
+                  activeTab === 'ocr'
+                    ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <ScanText className="w-3.5 h-3.5 text-amber-400" />
+                <span>On-Device OCR</span>
+                {SHOW_PRO_BADGES && (
+                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-300 font-bold">
+                    PRO
+                  </span>
+                )}
+              </button>
+            )}
+
+            {(!filterModes || filterModes.includes('pdfa')) && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('pdfa')}
+                className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
+                  activeTab === 'pdfa'
+                    ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <Archive className="w-3.5 h-3.5 text-indigo-400" />
+                <span>PDF/A Archival</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* User-facing Error Alert Banner */}

@@ -204,8 +204,6 @@ export function getCompatibleOutputCategories(
       result.Audio = ['MP3', 'WAV', 'AAC', 'FLAC', 'OGG', 'M4A'];
       // 3. Frame snapshots & animated GIF
       result.Image = ['GIF', 'PNG', 'JPG'];
-      // 4. Archiving
-      result.Archive = ['ZIP', 'TAR', 'TAR.GZ'];
       break;
 
     case 'Audio':
@@ -213,19 +211,15 @@ export function getCompatibleOutputCategories(
       result.Audio = ['MP3', 'WAV', 'AAC', 'FLAC', 'OGG', 'M4A', 'AIFF'];
       // 2. Video container wrapping
       result.Video = ['MP4', 'WEBM'];
-      // 3. Archiving
-      result.Archive = ['ZIP', 'TAR', 'TAR.GZ'];
       break;
 
     case 'Image':
       // 1. Image cross-conversion & compression
       result.Image = ['WEBP', 'PNG', 'JPG', 'AVIF', 'GIF', 'BMP', 'ICO'];
-      // 2. Single or multi-image document assembly
-      result.Document = ['PDF'];
-      // 3. Vector tracing
+      // 2. Vector tracing
       result.Vector = ['SVG'];
-      // 4. Archiving
-      result.Archive = ['ZIP', 'TAR', 'TAR.GZ'];
+      // 3. Single or multi-image document assembly
+      result.Document = ['PDF'];
       break;
 
     case 'Document':
@@ -241,7 +235,6 @@ export function getCompatibleOutputCategories(
         result.Document = ['PDF', 'HTML', 'MD', 'TXT', 'DOCX'];
         result.Ebook = ['EPUB', 'TXT'];
       }
-      result.Archive = ['ZIP', 'TAR', 'TAR.GZ'];
       break;
 
     case 'Spreadsheet':
@@ -249,7 +242,6 @@ export function getCompatibleOutputCategories(
       result.Spreadsheet = ['XLSX', 'CSV', 'ODS', 'JSON', 'TSV', 'XLS'];
       // Tabular report document
       result.Document = ['HTML', 'PDF'];
-      result.Archive = ['ZIP', 'TAR', 'TAR.GZ'];
       break;
 
     case 'Vector':
@@ -258,22 +250,19 @@ export function getCompatibleOutputCategories(
         result.Document = ['PDF'];
       } else {
         // SVG
+        result.Vector = ['SVG'];
         result.Image = ['PNG', 'JPG', 'WEBP'];
         result.Document = ['PDF'];
-        result.Vector = ['SVG'];
       }
-      result.Archive = ['ZIP', 'TAR', 'TAR.GZ'];
       break;
 
     case 'Font':
       result.Font = ['TTF', 'OTF', 'WOFF', 'WOFF2'];
-      result.Archive = ['ZIP', 'TAR', 'TAR.GZ'];
       break;
 
     case 'Ebook':
       result.Document = ['PDF', 'HTML', 'TXT', 'MD'];
       result.Ebook = ['EPUB', 'TXT'];
-      result.Archive = ['ZIP', 'TAR', 'TAR.GZ'];
       break;
 
     case 'Archive':

@@ -15,9 +15,7 @@ import {
 import {
   type FormatCategory,
   ALL_CATEGORIES,
-  FORMAT_CATALOG,
   getCompatibleOutputCategories,
-  detectSourceCategory,
 } from '../../engine/formatRegistry';
 
 export interface FormatPickerProps {
@@ -51,17 +49,28 @@ export const FormatPicker: React.FC<FormatPickerProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const compatibleMap = getCompatibleOutputCategories(fileName, mimeType);
-  const compatibleCategories = Object.keys(compatibleMap) as FormatCategory[];
+  // Strictly filter categories that have at least 1 valid compatible target format
+  const compatibleCategories = ALL_CATEGORIES.filter(
+    (cat) => Array.isArray(compatibleMap[cat]) && (compatibleMap[cat] || []).length > 0
+  );
 
-  // Determine initial category based on selected format or source category
-  const [activeCategory, setActiveCategory] = useState<FormatCategory>(() => {
-    for (const [cat, fmts] of Object.entries(FORMAT_CATALOG)) {
-      if (fmts.includes(selectedFormat.toUpperCase())) {
-        return cat as FormatCategory;
+  const [userSelectedCategory, setUserSelectedCategory] = useState<FormatCategory | null>(null);
+
+  // Derive activeCategory directly during render - guaranteed to be compatible
+  const activeCategory: FormatCategory = (() => {
+    if (userSelectedCategory && compatibleCategories.includes(userSelectedCategory)) {
+      return userSelectedCategory;
+    }
+    for (const cat of compatibleCategories) {
+      const formats = compatibleMap[cat] || [];
+      if (formats.some((f) => f.toUpperCase() === selectedFormat.toUpperCase())) {
+        return cat;
       }
     }
-    return compatibleCategories[0] || detectSourceCategory(fileName, mimeType);
-  });
+    return compatibleCategories[0] || 'Image';
+  })();
+
+  const setActiveCategory = (cat: FormatCategory) => setUserSelectedCategory(cat);
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -85,8 +94,8 @@ export const FormatPicker: React.FC<FormatPickerProps> = ({
     };
   }, [isOpen]);
 
-  // Formats to display in the right column
-  const formatsForCategory = compatibleMap[activeCategory] || FORMAT_CATALOG[activeCategory] || [];
+  // Formats to display in the right column - strictly from compatibleMap
+  const formatsForCategory = compatibleMap[activeCategory] || [];
 
   return (
     <div ref={containerRef} className="relative inline-block text-left">
@@ -120,11 +129,11 @@ export const FormatPicker: React.FC<FormatPickerProps> = ({
           aria-label="Format Selector"
           className="absolute z-50 right-0 sm:left-0 sm:right-auto mt-2 w-[340px] sm:w-[430px] h-[270px] rounded-xl border border-zinc-800 bg-[#121214] shadow-2xl backdrop-blur-md flex overflow-hidden animate-in fade-in zoom-in-95 duration-100"
         >
-          {/* Left Column: Category Selector (~140px wide) */}
+          {/* Left Column: Category Selector (~140px wide) - ONLY compatible categories */}
           <div className="w-[130px] sm:w-[145px] shrink-0 border-r border-zinc-800/80 bg-zinc-950/70 overflow-y-auto no-scrollbar py-1">
-            {ALL_CATEGORIES.map((cat) => {
-              const isCompatible = compatibleCategories.includes(cat);
+            {compatibleCategories.map((cat) => {
               const isActive = activeCategory === cat;
+              const count = (compatibleMap[cat] || []).length;
 
               return (
                 <button
@@ -134,16 +143,17 @@ export const FormatPicker: React.FC<FormatPickerProps> = ({
                   className={`w-full flex items-center justify-between px-3 py-2 text-[11px] font-medium transition-colors text-left cursor-pointer ${
                     isActive
                       ? 'bg-zinc-800/90 text-white font-semibold'
-                      : isCompatible
-                      ? 'text-zinc-300 hover:bg-zinc-900 hover:text-white'
-                      : 'text-zinc-550 opacity-40 hover:opacity-75'
+                      : 'text-zinc-300 hover:bg-zinc-900 hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     {CATEGORY_ICONS[cat]}
                     <span className="truncate">{cat}</span>
                   </div>
-                  {isActive && <ChevronRight className="w-3 h-3 text-zinc-400 shrink-0" />}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-[10px] font-mono text-zinc-500">{count}</span>
+                    {isActive && <ChevronRight className="w-3 h-3 text-zinc-400" />}
+                  </div>
                 </button>
               );
             })}

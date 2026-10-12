@@ -19,7 +19,11 @@ import {
   type SpreadsheetConversionResult,
 } from '../../engine/spreadsheet/spreadsheetService';
 
-export const SpreadsheetConverter: React.FC = () => {
+export interface SpreadsheetConverterProps {
+  isViewerMode?: boolean;
+}
+
+export const SpreadsheetConverter: React.FC<SpreadsheetConverterProps> = ({ isViewerMode = false }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isInspecting, setIsInspecting] = useState(false);
   const [inspection, setInspection] = useState<WorkbookInspectionResult | null>(null);
@@ -136,8 +140,16 @@ export const SpreadsheetConverter: React.FC = () => {
           <Dropzone
             onFilesSelected={handleFilesSelected}
             accept=".xlsx,.xls,.csv,.ods,.tsv,.json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,application/json"
-            title="Drop spreadsheet (XLSX, XLS, CSV, ODS, JSON) to convert"
-            subtitle="Select spreadsheet · Inspect tabular structure and convert formats with zero server egress"
+            title={
+              isViewerMode
+                ? 'Drop spreadsheet to inspect & preview tabular structure'
+                : 'Drop spreadsheet (XLSX, XLS, CSV, ODS, JSON) to convert'
+            }
+            subtitle={
+              isViewerMode
+                ? 'Select workbook · Inspect sheets, rows, columns, and preview tabular data'
+                : 'Select spreadsheet · Inspect tabular structure and convert formats with zero server egress'
+            }
             hint="100% Client-Side · In-Memory Parsing"
           />
         )

@@ -67,43 +67,50 @@ describe('Universal Format Registry & Smart Compatibility Matrix', () => {
   });
 
   it('generates cross-category compatibility matrix for inter-type conversions', () => {
-    // Video should offer Video, Audio (extraction), Image (GIF/frames), Archive
+    // Video should strictly offer Video, Audio (extraction), Image (GIF/frames)
     const videoTargets = getCompatibleOutputCategories('movie.mp4');
+    assert.deepStrictEqual(Object.keys(videoTargets).sort(), ['Audio', 'Image', 'Video']);
     assert.ok(videoTargets.Video && videoTargets.Video.includes('WEBM'));
     assert.ok(videoTargets.Audio && videoTargets.Audio.includes('MP3'));
     assert.ok(videoTargets.Image && videoTargets.Image.includes('GIF'));
-    assert.ok(videoTargets.Archive && videoTargets.Archive.includes('ZIP'));
 
-    // Audio should offer Audio and Archive
+    // Audio should strictly offer Audio and Video container wrapping
     const audioTargets = getCompatibleOutputCategories('song.mp3');
+    assert.deepStrictEqual(Object.keys(audioTargets).sort(), ['Audio', 'Video']);
     assert.ok(audioTargets.Audio && audioTargets.Audio.includes('WAV'));
-    assert.ok(audioTargets.Archive && audioTargets.Archive.includes('ZIP'));
 
-    // Image should offer Image, Vector (potrace trace to SVG), Document (PDF), Archive
+    // Image (e.g. PNG) MUST strictly offer ONLY Image, Vector, Document (no Archive, Audio, Video, etc.)
     const imgTargets = getCompatibleOutputCategories('photo.png');
+    assert.deepStrictEqual(Object.keys(imgTargets).sort(), ['Document', 'Image', 'Vector']);
     assert.ok(imgTargets.Image && imgTargets.Image.includes('WEBP'));
     assert.ok(imgTargets.Vector && imgTargets.Vector.includes('SVG'));
     assert.ok(imgTargets.Document && imgTargets.Document.includes('PDF'));
-    assert.ok(imgTargets.Archive && imgTargets.Archive.includes('ZIP'));
 
-    // PDF Document should offer Image (page rasterization), Document (TXT, HTML), Archive
+    // PDF Document should offer Image, Document, Ebook
     const pdfTargets = getCompatibleOutputCategories('book.pdf');
+    assert.deepStrictEqual(Object.keys(pdfTargets).sort(), ['Document', 'Ebook', 'Image']);
     assert.ok(pdfTargets.Image && pdfTargets.Image.includes('PNG'));
     assert.ok(pdfTargets.Image && pdfTargets.Image.includes('WEBP'));
     assert.ok(pdfTargets.Document && pdfTargets.Document.includes('TXT'));
-    assert.ok(pdfTargets.Archive && pdfTargets.Archive.includes('ZIP'));
 
-    // Vector SVG should offer Bitmap Image (render to PNG/JPG/WEBP), Document (PDF), Vector (SVG)
+    // Vector SVG should offer Bitmap Image, Document (PDF), Vector (SVG)
     const svgTargets = getCompatibleOutputCategories('vector.svg');
+    assert.deepStrictEqual(Object.keys(svgTargets).sort(), ['Document', 'Image', 'Vector']);
     assert.ok(svgTargets.Image && svgTargets.Image.includes('PNG'));
     assert.ok(svgTargets.Document && svgTargets.Document.includes('PDF'));
     assert.ok(svgTargets.Vector && svgTargets.Vector.includes('SVG'));
 
-    // Spreadsheet should offer Spreadsheet formats, Document (HTML), Archive
+    // Spreadsheet should offer Spreadsheet formats and Document (HTML/PDF)
     const sheetTargets = getCompatibleOutputCategories('table.xlsx');
+    assert.deepStrictEqual(Object.keys(sheetTargets).sort(), ['Document', 'Spreadsheet']);
     assert.ok(sheetTargets.Spreadsheet && sheetTargets.Spreadsheet.includes('CSV'));
     assert.ok(sheetTargets.Spreadsheet && sheetTargets.Spreadsheet.includes('JSON'));
     assert.ok(sheetTargets.Document && sheetTargets.Document.includes('HTML'));
+
+    // Archive should strictly offer Archive
+    const zipTargets = getCompatibleOutputCategories('bundle.zip');
+    assert.deepStrictEqual(Object.keys(zipTargets), ['Archive']);
+    assert.ok(zipTargets.Archive && zipTargets.Archive.includes('TAR.GZ'));
   });
 
   it('returns intelligent default target format for any uploaded file', () => {

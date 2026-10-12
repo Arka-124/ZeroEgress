@@ -33,7 +33,11 @@ function formatSeconds(secs: number): string {
   return `${formattedMins}:${formattedSecs}`;
 }
 
-export const MediaTools: React.FC = () => {
+export interface MediaToolsProps {
+  isTrimmerMode?: boolean;
+}
+
+export const MediaTools: React.FC<MediaToolsProps> = ({ isTrimmerMode = false }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<MediaCategory>('video');
@@ -41,7 +45,7 @@ export const MediaTools: React.FC = () => {
   const [currentTime, setCurrentTime] = useState<number>(0);
 
   // Trimming parameters
-  const [isTrimEnabled, setIsTrimEnabled] = useState(false);
+  const [isTrimEnabled, setIsTrimEnabled] = useState(isTrimmerMode || false);
   const [trimStart, setTrimStart] = useState<number>(0);
   const [trimEnd, setTrimEnd] = useState<number>(0);
   const [isLosslessTrim, setIsLosslessTrim] = useState(true);
@@ -278,10 +282,12 @@ export const MediaTools: React.FC = () => {
         <div>
           <h2 className="text-lg font-semibold tracking-tight text-zinc-100 flex items-center gap-2">
             <Film className="w-5 h-5 text-sky-400" />
-            <span>Media Studio & WebAssembly Transcoder</span>
+            <span>{isTrimmerMode ? 'Stream Trimmer & Cutter' : 'Media Studio & WebAssembly Transcoder'}</span>
           </h2>
           <p className="text-xs text-zinc-400 font-mono mt-0.5">
-            Video to Audio extraction · Stream trimming · Zero server uploads
+            {isTrimmerMode
+              ? 'Lossless stream cutting · Audio/Video precision trimming · Zero server uploads'
+              : 'Video to Audio extraction · Stream trimming · Zero server uploads'}
           </p>
         </div>
 

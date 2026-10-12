@@ -13,7 +13,6 @@ import {
   FileCode2,
   FileSpreadsheet,
   Type,
-  BookOpen,
   Camera,
   ScanText,
   Lock,
@@ -24,7 +23,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { Header } from './components/Header';
-import { ImageConverter } from './components/ImageConverter/ImageConverter';
 import { PdfTools } from './components/PdfTools/PdfTools';
 import { MetadataScrubber } from './components/MetadataScrubber/MetadataScrubber';
 import { DataTools } from './components/DataTools/DataTools';
@@ -40,21 +38,12 @@ const VideoGifFrames = React.lazy(() => import('./components/MediaTools/VideoGif
 const ArchiveTools = React.lazy(() => import('./components/ArchiveTools/ArchiveTools'));
 const SpreadsheetConverter = React.lazy(() => import('./components/SpreadsheetConverter/SpreadsheetConverter'));
 const VectorFontTools = React.lazy(() => import('./components/VectorFontTools/VectorFontTools'));
-const EbookTools = React.lazy(() => import('./components/EbookTools/EbookTools'));
-const CaptureTools = React.lazy(() => import('./components/CaptureTools/CaptureTools'));
 const ImageWatermark = React.lazy(() => import('./components/ImageConverter/ImageWatermark'));
-const CadRawTools = React.lazy(() => import('./components/CadRawTools/CadRawTools'));
-const PdfaArchival = React.lazy(() =>
-  import('./components/PdfTools/PdfaArchival').then((m) => ({ default: m.PdfaArchival }))
-);
 const PdfRedact = React.lazy(() =>
   import('./components/PdfTools/PdfRedact').then((m) => ({ default: m.PdfRedact }))
 );
 const PdfOcr = React.lazy(() =>
   import('./components/PdfTools/PdfOcr').then((m) => ({ default: m.PdfOcr }))
-);
-const PdfSecurity = React.lazy(() =>
-  import('./components/PdfTools/PdfSecurity').then((m) => ({ default: m.PdfSecurity }))
 );
 const HashAuditTool = React.lazy(() => import('./components/Privacy/HashAuditTool'));
 
@@ -62,17 +51,17 @@ const HashAuditTool = React.lazy(() => import('./components/Privacy/HashAuditToo
 export type MasterCategory = 'universal' | 'documents' | 'images' | 'media' | 'data' | 'privacy';
 
 // Sub-tools for each category
-export type DocumentsSubTool = 'pdf' | 'pdfa' | 'ebooks' | 'capture';
-export type ImagesSubTool = 'converter' | 'watermark' | 'vectorfont' | 'cadraw';
-export type MediaSubTool = 'transcoder' | 'gif_frames';
-export type DataSubTool = 'archives' | 'spreadsheet' | 'structured';
-export type PrivacySubTool = 'ocr' | 'security' | 'redact' | 'metadata' | 'hash_audit';
+export type DocumentsSubTool = 'split_merge' | 'compress_rotate' | 'security_watermark' | 'ocr';
+export type ImagesSubTool = 'watermark' | 'vector_svgo' | 'font';
+export type MediaSubTool = 'gif_frames' | 'trimmer';
+export type DataSubTool = 'archives' | 'table_viewer' | 'structured';
+export type PrivacySubTool = 'metadata' | 'redact' | 'hash_audit';
 
 const categoryTitles: Record<MasterCategory, string> = {
   universal: '⚡ Universal Converter',
   documents: 'Documents & PDF Studio',
   images: 'Images & Visual Design',
-  media: 'Video & Audio Transcoder',
+  media: 'Video & Audio Studio',
   data: 'Data, Archives & Tables',
   privacy: 'Privacy, Security & Forensics',
 };
@@ -89,11 +78,11 @@ export const App: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<MasterCategory>('universal');
 
   // Active sub-tool state for each pillar
-  const [docSubTool, setDocSubTool] = useState<DocumentsSubTool>('pdf');
-  const [imgSubTool, setImgSubTool] = useState<ImagesSubTool>('converter');
-  const [mediaSubTool, setMediaSubTool] = useState<MediaSubTool>('transcoder');
+  const [docSubTool, setDocSubTool] = useState<DocumentsSubTool>('split_merge');
+  const [imgSubTool, setImgSubTool] = useState<ImagesSubTool>('watermark');
+  const [mediaSubTool, setMediaSubTool] = useState<MediaSubTool>('gif_frames');
   const [dataSubTool, setDataSubTool] = useState<DataSubTool>('archives');
-  const [privacySubTool, setPrivacySubTool] = useState<PrivacySubTool>('ocr');
+  const [privacySubTool, setPrivacySubTool] = useState<PrivacySubTool>('metadata');
 
   // Modals & UI State
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -369,76 +358,74 @@ export const App: React.FC = () => {
               <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-zinc-900/80 border border-zinc-800/80 w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={() => setDocSubTool('pdf')}
+                  onClick={() => setDocSubTool('split_merge')}
                   className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                    docSubTool === 'pdf'
+                    docSubTool === 'split_merge'
                       ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                       : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>PDF Power Tools</span>
-                  <span className="text-[10px] font-mono opacity-70">Split / Merge / Compress</span>
+                  <FileText className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Split & Merge</span>
+                  <span className="text-[10px] font-mono opacity-70">Reorder / Extract</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setDocSubTool('pdfa')}
+                  onClick={() => setDocSubTool('compress_rotate')}
                   className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                    docSubTool === 'pdfa'
+                    docSubTool === 'compress_rotate'
                       ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                       : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  <Archive className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>PDF/A Archival</span>
-                  <span className="text-[10px] font-mono opacity-70">ISO Compliance</span>
+                  <Archive className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Compress & Rotate</span>
+                  <span className="text-[10px] font-mono opacity-70">Optimize / Orient</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setDocSubTool('ebooks')}
+                  onClick={() => setDocSubTool('security_watermark')}
                   className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                    docSubTool === 'ebooks'
+                    docSubTool === 'security_watermark'
                       ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                       : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  <BookOpen className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Office & E-Books</span>
-                  <span className="text-[10px] font-mono opacity-70">DOCX / EPUB / MD</span>
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Security & Watermark</span>
+                  <span className="text-[10px] font-mono opacity-70">AES-256 / Stamp</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setDocSubTool('capture')}
+                  onClick={() => setDocSubTool('ocr')}
                   className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                    docSubTool === 'capture'
+                    docSubTool === 'ocr'
                       ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                       : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  <Camera className="w-3.5 h-3.5 text-purple-400" />
-                  <span>HTML & Web Capture</span>
-                  <span className="text-[10px] font-mono opacity-70">URL to PDF</span>
+                  <ScanText className="w-3.5 h-3.5 text-purple-400" />
+                  <span>OCR Studio</span>
+                  <span className="text-[10px] font-mono opacity-70">Tesseract On-Device</span>
                 </button>
               </div>
 
               {/* Sub-tool Views */}
-              {docSubTool === 'pdf' && <PdfTools onOpenLicense={() => setIsLicenseOpen(true)} />}
-              {docSubTool === 'pdfa' && (
-                <React.Suspense fallback={<LoadingSpinner label="Loading PDF/A Archival Engine..." />}>
-                  <PdfaArchival />
-                </React.Suspense>
+              {docSubTool === 'split_merge' && (
+                <PdfTools initialTab="merge" filterModes={['merge', 'split']} onOpenLicense={() => setIsLicenseOpen(true)} />
               )}
-              {docSubTool === 'ebooks' && (
-                <React.Suspense fallback={<LoadingSpinner label="Loading Office & E-Books Suite..." />}>
-                  <EbookTools />
-                </React.Suspense>
+              {docSubTool === 'compress_rotate' && (
+                <PdfTools initialTab="compress" filterModes={['compress', 'rotate']} onOpenLicense={() => setIsLicenseOpen(true)} />
               )}
-              {docSubTool === 'capture' && (
-                <React.Suspense fallback={<LoadingSpinner label="Loading Webpage & Capture Studio..." />}>
-                  <CaptureTools />
+              {docSubTool === 'security_watermark' && (
+                <PdfTools initialTab="security" filterModes={['security', 'watermark']} onOpenLicense={() => setIsLicenseOpen(true)} />
+              )}
+              {docSubTool === 'ocr' && (
+                <React.Suspense fallback={<LoadingSpinner label="Loading On-Device OCR Studio..." />}>
+                  <PdfOcr />
                 </React.Suspense>
               )}
             </div>
@@ -453,20 +440,6 @@ export const App: React.FC = () => {
               <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-zinc-900/80 border border-zinc-800/80 w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={() => setImgSubTool('converter')}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                    imgSubTool === 'converter'
-                      ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Image Converter</span>
-                  <span className="text-[10px] font-mono opacity-70">WebP / PNG / JPG / AVIF</span>
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => setImgSubTool('watermark')}
                   className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
                     imgSubTool === 'watermark'
@@ -475,54 +448,53 @@ export const App: React.FC = () => {
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Image Watermark</span>
+                  <span>Watermark Studio</span>
                   <span className="text-[10px] font-mono opacity-70">Text & Logo Stamp</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setImgSubTool('vectorfont')}
+                  onClick={() => setImgSubTool('vector_svgo')}
                   className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                    imgSubTool === 'vectorfont'
+                    imgSubTool === 'vector_svgo'
+                      ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <Compass className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Vector Tracing & SVGO</span>
+                  <span className="text-[10px] font-mono opacity-70">Potrace / Minify</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setImgSubTool('font')}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
+                    imgSubTool === 'font'
                       ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                       : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   <Type className="w-3.5 h-3.5 text-sky-400" />
-                  <span>Fonts & Vectors</span>
-                  <span className="text-[10px] font-mono opacity-70">WOFF2 / SVG / Potrace</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setImgSubTool('cadraw')}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                    imgSubTool === 'cadraw'
-                      ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  <Compass className="w-3.5 h-3.5 text-amber-400" />
-                  <span>CAD & Camera RAW</span>
-                  <span className="text-[10px] font-mono opacity-70">DXF / CR2 / DNG</span>
+                  <span>Font Converter</span>
+                  <span className="text-[10px] font-mono opacity-70">WOFF2 / TTF / OTF</span>
                 </button>
               </div>
 
               {/* Sub-tool Views */}
-              {imgSubTool === 'converter' && <ImageConverter />}
               {imgSubTool === 'watermark' && (
                 <React.Suspense fallback={<LoadingSpinner label="Loading Image Watermark Studio..." />}>
                   <ImageWatermark />
                 </React.Suspense>
               )}
-              {imgSubTool === 'vectorfont' && (
-                <React.Suspense fallback={<LoadingSpinner label="Loading Fonts & Vectors Studio..." />}>
-                  <VectorFontTools />
+              {imgSubTool === 'vector_svgo' && (
+                <React.Suspense fallback={<LoadingSpinner label="Loading Vector Tracing & SVGO Studio..." />}>
+                  <VectorFontTools initialTab="vector" filterTabs={['vector', 'svgo']} />
                 </React.Suspense>
               )}
-              {imgSubTool === 'cadraw' && (
-                <React.Suspense fallback={<LoadingSpinner label="Loading CAD & Camera RAW Studio..." />}>
-                  <CadRawTools />
+              {imgSubTool === 'font' && (
+                <React.Suspense fallback={<LoadingSpinner label="Loading Font Converter..." />}>
+                  <VectorFontTools initialTab="font" filterTabs={['font']} />
                 </React.Suspense>
               )}
             </div>
@@ -537,20 +509,6 @@ export const App: React.FC = () => {
               <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-zinc-900/80 border border-zinc-800/80 w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={() => setMediaSubTool('transcoder')}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                    mediaSubTool === 'transcoder'
-                      ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  <Film className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Media Transcoder</span>
-                  <span className="text-[10px] font-mono opacity-70">MP4 / MP3 / WAV / WebM</span>
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => setMediaSubTool('gif_frames')}
                   className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
                     mediaSubTool === 'gif_frames'
@@ -559,20 +517,34 @@ export const App: React.FC = () => {
                   }`}
                 >
                   <Camera className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>GIF & Frame Capture</span>
+                  <span>Video to GIF & Frame Capture</span>
                   <span className="text-[10px] font-mono opacity-70">Video to GIF / Stills</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMediaSubTool('trimmer')}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
+                    mediaSubTool === 'trimmer'
+                      ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <Film className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Stream Trimmer</span>
+                  <span className="text-[10px] font-mono opacity-70">Lossless Cutter</span>
                 </button>
               </div>
 
               {/* Sub-tool Views */}
-              {mediaSubTool === 'transcoder' && (
-                <React.Suspense fallback={<LoadingSpinner label="Lazy-loading FFmpeg WebAssembly Studio..." />}>
-                  <MediaTools />
-                </React.Suspense>
-              )}
               {mediaSubTool === 'gif_frames' && (
                 <React.Suspense fallback={<LoadingSpinner label="Loading Video Frame Studio..." />}>
                   <VideoGifFrames />
+                </React.Suspense>
+              )}
+              {mediaSubTool === 'trimmer' && (
+                <React.Suspense fallback={<LoadingSpinner label="Lazy-loading Stream Trimmer Engine..." />}>
+                  <MediaTools isTrimmerMode={true} />
                 </React.Suspense>
               )}
             </div>
@@ -595,22 +567,22 @@ export const App: React.FC = () => {
                   }`}
                 >
                   <Archive className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Universal Archives</span>
+                  <span>Archive Manager</span>
                   <span className="text-[10px] font-mono opacity-70">ZIP / TAR / GZ</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setDataSubTool('spreadsheet')}
+                  onClick={() => setDataSubTool('table_viewer')}
                   className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                    dataSubTool === 'spreadsheet'
+                    dataSubTool === 'table_viewer'
                       ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                       : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Spreadsheets & Tables</span>
-                  <span className="text-[10px] font-mono opacity-70">XLSX / CSV / ODS</span>
+                  <span>Interactive Table Viewer</span>
+                  <span className="text-[10px] font-mono opacity-70">Inspect & Preview</span>
                 </button>
 
                 <button
@@ -623,7 +595,7 @@ export const App: React.FC = () => {
                   }`}
                 >
                   <Code2 className="w-3.5 h-3.5 text-sky-400" />
-                  <span>Structured Data</span>
+                  <span>Data Transcoder</span>
                   <span className="text-[10px] font-mono opacity-70">JSON ↔ CSV ↔ YAML</span>
                 </button>
               </div>
@@ -634,9 +606,9 @@ export const App: React.FC = () => {
                   <ArchiveTools />
                 </React.Suspense>
               )}
-              {dataSubTool === 'spreadsheet' && (
-                <React.Suspense fallback={<LoadingSpinner label="Loading Spreadsheet Converter..." />}>
-                  <SpreadsheetConverter />
+              {dataSubTool === 'table_viewer' && (
+                <React.Suspense fallback={<LoadingSpinner label="Loading Interactive Table Viewer..." />}>
+                  <SpreadsheetConverter isViewerMode={true} />
                 </React.Suspense>
               )}
               {dataSubTool === 'structured' && <DataTools />}
@@ -652,30 +624,16 @@ export const App: React.FC = () => {
               <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-zinc-900/80 border border-zinc-800/80 w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={() => setPrivacySubTool('ocr')}
+                  onClick={() => setPrivacySubTool('metadata')}
                   className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                    privacySubTool === 'ocr'
+                    privacySubTool === 'metadata'
                       ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                       : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  <ScanText className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>On-Device OCR</span>
-                  <span className="text-[10px] font-mono opacity-70">Text Recognition</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPrivacySubTool('security')}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                    privacySubTool === 'security'
-                      ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  <Lock className="w-3.5 h-3.5 text-amber-400" />
-                  <span>PDF Security</span>
-                  <span className="text-[10px] font-mono opacity-70">AES-256 Encryption</span>
+                  <ShieldAlert className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Metadata & EXIF Stripper</span>
+                  <span className="text-[10px] font-mono opacity-70">EXIF & GPS Scrubber</span>
                 </button>
 
                 <button
@@ -688,22 +646,8 @@ export const App: React.FC = () => {
                   }`}
                 >
                   <Eraser className="w-3.5 h-3.5 text-rose-400" />
-                  <span>Destructive Redact</span>
+                  <span>Destructive Redaction</span>
                   <span className="text-[10px] font-mono opacity-70">Vector Purge</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPrivacySubTool('metadata')}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                    privacySubTool === 'metadata'
-                      ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  <ShieldAlert className="w-3.5 h-3.5 text-teal-400" />
-                  <span>Metadata Stripper</span>
-                  <span className="text-[10px] font-mono opacity-70">EXIF & GPS Scrubber</span>
                 </button>
 
                 <button
@@ -716,30 +660,20 @@ export const App: React.FC = () => {
                   }`}
                 >
                   <Hash className="w-3.5 h-3.5 text-sky-400" />
-                  <span>Hashes & Audit</span>
+                  <span>Cryptographic Hash Audit</span>
                   <span className="text-[10px] font-mono opacity-70">Chain of Custody</span>
                 </button>
               </div>
 
               {/* Sub-tool Views */}
-              {privacySubTool === 'ocr' && (
-                <React.Suspense fallback={<LoadingSpinner label="Loading On-Device OCR Worker..." />}>
-                  <PdfOcr />
-                </React.Suspense>
-              )}
-              {privacySubTool === 'security' && (
-                <React.Suspense fallback={<LoadingSpinner label="Loading PDF Cryptography Engine..." />}>
-                  <PdfSecurity />
-                </React.Suspense>
-              )}
+              {privacySubTool === 'metadata' && <MetadataScrubber />}
               {privacySubTool === 'redact' && (
                 <React.Suspense fallback={<LoadingSpinner label="Loading Vector Redaction Engine..." />}>
                   <PdfRedact />
                 </React.Suspense>
               )}
-              {privacySubTool === 'metadata' && <MetadataScrubber />}
               {privacySubTool === 'hash_audit' && (
-                <React.Suspense fallback={<LoadingSpinner label="Loading Hash & Audit Engine..." />}>
+                <React.Suspense fallback={<LoadingSpinner label="Loading Forensic Hash Auditor..." />}>
                   <HashAuditTool />
                 </React.Suspense>
               )}
