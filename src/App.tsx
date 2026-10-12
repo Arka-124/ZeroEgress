@@ -23,6 +23,7 @@ import { PrivacyInfo } from './components/PrivacyInfo';
 import { LicenseModal } from './components/License/LicenseModal';
 import { ArchitectureModal } from './components/Architecture/ArchitectureModal';
 import { SHOW_PRO_BADGES, SHOW_LICENSE_UI } from './engine/license/licenseVerifier';
+import { Analytics } from '@vercel/analytics/react';
 
 // Lazy-load heavier utilities to keep initial bundle small
 const MediaTools = React.lazy(() => import('./components/MediaTools/MediaTools'));
@@ -444,6 +445,7 @@ export const App: React.FC = () => {
           window.dispatchEvent(new CustomEvent('zeroegress:license-updated'));
         }}
       />
+      <Analytics />
     </div>
   );
 };
