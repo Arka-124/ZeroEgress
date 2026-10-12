@@ -10,6 +10,8 @@ import {
   FolderSync,
   Key,
   FileCode2,
+  Archive,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { ImageConverter } from './components/ImageConverter/ImageConverter';
@@ -22,17 +24,21 @@ import { LicenseModal } from './components/License/LicenseModal';
 import { ArchitectureModal } from './components/Architecture/ArchitectureModal';
 import { SHOW_PRO_BADGES, SHOW_LICENSE_UI } from './engine/license/licenseVerifier';
 
-// Lazy-load MediaTools to keep initial bundle small and defer FFmpeg WebAssembly core
+// Lazy-load heavier utilities to keep initial bundle small
 const MediaTools = React.lazy(() => import('./components/MediaTools/MediaTools'));
+const ArchiveTools = React.lazy(() => import('./components/ArchiveTools/ArchiveTools'));
+const SpreadsheetConverter = React.lazy(() => import('./components/SpreadsheetConverter/SpreadsheetConverter'));
 
-type ActiveTool = 'image' | 'pdf' | 'metadata' | 'data' | 'media' | 'watchfolders';
+type ActiveTool = 'image' | 'pdf' | 'metadata' | 'data' | 'media' | 'archives' | 'spreadsheet' | 'watchfolders';
 
 const activeToolTitles: Record<ActiveTool, string> = {
   image: 'Instant Image Converter',
-  pdf: 'PDF Split, Merge & Vector Redaction',
+  pdf: 'PDF Split, Merge, Compress & Vector Redaction',
   metadata: 'Metadata Stripper',
   data: 'Data & Hashes',
   media: 'Media Studio & Transcoder',
+  archives: 'Universal Archive Suite (ZIP, TAR, GZ)',
+  spreadsheet: 'Spreadsheet & Table Converter',
   watchfolders: 'Automated Watch Folders Pipeline',
 };
 
@@ -253,6 +259,50 @@ export const App: React.FC = () => {
 
             <button
               type="button"
+              onClick={() => setActiveTool('archives')}
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTool === 'archives'
+                  ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+              }`}
+            >
+              <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+              <span>Archives</span>
+              <span
+                className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors ${
+                  activeTool === 'archives'
+                    ? 'bg-zinc-300 text-zinc-950 font-semibold'
+                    : 'bg-zinc-800 text-zinc-400'
+                }`}
+              >
+                ZIP / TAR
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTool('spreadsheet')}
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTool === 'spreadsheet'
+                  ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+              }`}
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+              <span>Spreadsheet</span>
+              <span
+                className={`text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors ${
+                  activeTool === 'spreadsheet'
+                    ? 'bg-zinc-300 text-zinc-950 font-semibold'
+                    : 'bg-zinc-800 text-zinc-400'
+                }`}
+              >
+                XLSX / CSV
+              </span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setActiveTool('watchfolders')}
               className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTool === 'watchfolders'
@@ -296,6 +346,34 @@ export const App: React.FC = () => {
               }
             >
               <MediaTools />
+            </React.Suspense>
+          )}
+          {activeTool === 'archives' && (
+            <React.Suspense
+              fallback={
+                <div className="py-20 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="w-8 h-8 rounded-full border-2 border-zinc-700 border-t-amber-400 animate-spin" />
+                  <p className="text-xs font-mono text-zinc-400">
+                    Loading Universal Archive Suite...
+                  </p>
+                </div>
+              }
+            >
+              <ArchiveTools />
+            </React.Suspense>
+          )}
+          {activeTool === 'spreadsheet' && (
+            <React.Suspense
+              fallback={
+                <div className="py-20 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="w-8 h-8 rounded-full border-2 border-zinc-700 border-t-emerald-400 animate-spin" />
+                  <p className="text-xs font-mono text-zinc-400">
+                    Loading Spreadsheet Converter...
+                  </p>
+                </div>
+              }
+            >
+              <SpreadsheetConverter />
             </React.Suspense>
           )}
         </div>

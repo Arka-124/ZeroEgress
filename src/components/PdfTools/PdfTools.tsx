@@ -16,16 +16,18 @@ import {
   Eraser,
   ScanText,
   Sparkles,
+  Minimize2,
 } from 'lucide-react';
 import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
+import { PdfCompressor } from './PdfCompressor';
 import { engine } from '../../engine';
 import type { PdfMergeItem, TaskResultSuccess, PdfMetadata } from '../../engine/types';
 import { formatBytes, downloadBlob, downloadZip, parsePageRange } from '../../utils/fileUtils';
 import { hasEntitlement, SHOW_PRO_BADGES } from '../../engine/license/licenseVerifier.ts';
 
-type PdfToolMode = 'merge' | 'split' | 'redact' | 'ocr';
+type PdfToolMode = 'merge' | 'split' | 'compress' | 'redact' | 'ocr';
 
 export interface PdfToolsProps {
   onOpenLicense?: () => void;
@@ -509,6 +511,19 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
 
           <button
             type="button"
+            onClick={() => setActiveTab('compress')}
+            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+              activeTab === 'compress'
+                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Minimize2 className="w-3.5 h-3.5 text-blue-400" />
+            <span>Compress PDF</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('redact')}
             className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
               activeTab === 'redact'
@@ -988,6 +1003,9 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
           )}
         </div>
       )}
+
+      {/* ======================= COMPRESS VIEW ======================= */}
+      {activeTab === 'compress' && <PdfCompressor />}
 
       {/* ======================= VECTOR REDACT VIEW (PRO) ======================= */}
       {activeTab === 'redact' && (
