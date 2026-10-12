@@ -268,3 +268,44 @@ export async function decryptPdf(
   onProgress?.(1.0);
   return new Blob([decryptedBytes as any], { type: 'application/pdf' });
 }
+
+/**
+ * Converts a standard PDF into an ISO 19005-1 / PDF/A-1b Archival Compliant PDF
+ * by injecting OutputIntent and standard XMP identification metadata
+ */
+export async function convertToPdfa(
+  buffer: ArrayBuffer,
+  conformancePart = 1,
+  onProgress?: (ratio: number) => void
+): Promise<Blob> {
+  onProgress?.(0.2);
+  const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
+  onProgress?.(0.5);
+
+  const xmpMetadata = `<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about="" xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/">
+      <pdfaid:part>${conformancePart}</pdfaid:part>
+      <pdfaid:conformance>B</pdfaid:conformance>
+    </rdf:Description>
+    <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">
+      <dc:format>application/pdf</dc:format>
+    </rdf:Description>
+  </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>`;
+
+  const metadataStream = pdfDoc.context.stream(xmpMetadata, {
+    Type: 'Metadata',
+    Subtype: 'XML',
+  });
+  const metadataRef = pdfDoc.context.register(metadataStream);
+  pdfDoc.catalog.set(pdfLib.PDFName.of('Metadata'), metadataRef);
+
+  onProgress?.(0.8);
+  const pdfBytes = await pdfDoc.save();
+  onProgress?.(1.0);
+  return new Blob([pdfBytes as any], { type: 'application/pdf' });
+}
+

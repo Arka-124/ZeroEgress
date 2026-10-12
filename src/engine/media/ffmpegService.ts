@@ -14,6 +14,7 @@ const MIME_MAP: Record<string, string> = {
   mp4: 'video/mp4',
   webm: 'video/webm',
   mkv: 'video/x-matroska',
+  gif: 'image/gif',
 };
 
 class FFmpegService {
@@ -191,6 +192,8 @@ class FFmpegService {
             args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac');
           } else if (targetExt === 'webm') {
             args.push('-c:v', 'libvpx', '-c:a', 'libvorbis');
+          } else if (targetExt === 'gif') {
+            args.push('-vf', 'fps=10,scale=480:-1:flags=lanczos');
           }
         }
       }

@@ -29,12 +29,13 @@ import { PdfRotate } from './PdfRotate';
 import { PdfSecurity } from './PdfSecurity';
 import { PdfWatermark } from './PdfWatermark';
 import { PdfOcr } from './PdfOcr';
+import { PdfaArchival } from './PdfaArchival';
 import { engine } from '../../engine';
 import type { PdfMergeItem, TaskResultSuccess, PdfMetadata } from '../../engine/types';
 import { formatBytes, downloadBlob, downloadZip, parsePageRange } from '../../utils/fileUtils';
 import { hasEntitlement, SHOW_PRO_BADGES } from '../../engine/license/licenseVerifier.ts';
 
-type PdfToolMode = 'merge' | 'split' | 'compress' | 'rotate' | 'security' | 'watermark' | 'redact' | 'ocr';
+type PdfToolMode = 'merge' | 'split' | 'compress' | 'rotate' | 'security' | 'watermark' | 'redact' | 'ocr' | 'pdfa';
 
 export interface PdfToolsProps {
   onOpenLicense?: () => void;
@@ -535,6 +536,19 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense, initialTab })
                 PRO
               </span>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('pdfa')}
+            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
+              activeTab === 'pdfa'
+                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Archive className="w-3.5 h-3.5 text-indigo-400" />
+            <span>PDF/A Archival</span>
           </button>
         </div>
       </div>
@@ -1137,6 +1151,9 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense, initialTab })
 
       {/* ======================= ON-DEVICE OCR VIEW ======================= */}
       {activeTab === 'ocr' && <PdfOcr />}
+
+      {/* ======================= PDF/A ARCHIVAL VIEW ======================= */}
+      {activeTab === 'pdfa' && <PdfaArchival />}
     </div>
   );
 };
