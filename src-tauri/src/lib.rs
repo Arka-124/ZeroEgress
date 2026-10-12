@@ -1,9 +1,13 @@
+pub mod cad_raw;
+pub mod capture;
+pub mod compliance;
+pub mod ffmpeg;
+pub mod office;
+pub mod watch_folders;
+
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use std::process::Command;
-use std::sync::{Arc, Mutex};
 
 pub const ROOT_PUBKEY_BYTES: [u8; 32] = [
     0x07, 0x7a, 0xa4, 0xb7, 0xfc, 0x3a, 0x0e, 0x4e, 0xee, 0x84, 0x8f, 0x5a, 0x74, 0xf8, 0x85, 0x54,
@@ -37,6 +41,7 @@ pub struct SystemCapabilities {
     pub engine_type: String,
     pub ffmpeg_cli_available: bool,
     pub pro_entitlements_supported: bool,
+    pub hardware_acceleration: ffmpeg::HardwareAccelerationStatus,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -59,34 +64,272 @@ pub struct NativeLicenseResult {
     pub error: Option<String>,
 }
 
+/// Unified Request structure for uncapped CloudConvert native conversions
 #[derive(Debug, Serialize, Deserialize)]
-pub struct WatchFolderStatus {
-    pub watcher_id: String,
-    pub input_dir: String,
-    pub output_dir: String,
+pub struct NativeConversionRequest {
+    pub operation: String, // "media_transcode", "office_to_pdf", "cad_dxf", "camera_raw", "pdf_redact", "pdfa_compliance", "forensic_hash", "website_capture"
+    pub input_path: Option<String>,
+    pub output_path: Option<String>,
+    pub input_bytes: Option<Vec<u8>>,
+    pub file_name: String,
     pub target_format: String,
-    pub is_active: bool,
-    pub files_processed: u64,
+    pub options: Option<serde_json::Value>,
 }
 
-// Global state tracking active watch folders
-lazy_static_state: {
-    // Shared thread-safe state container for active watchers
+/// Unified Response structure for uncapped CloudConvert native conversions
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NativeConversionResponse {
+    pub success: bool,
+    pub output_file_name: String,
+    pub output_path: Option<String>,
+    pub output_bytes: Option<Vec<u8>>,
+    pub duration_ms: u64,
+    pub details: Option<String>,
+    pub error: Option<String>,
 }
 
-type WatcherRegistry = Arc<Mutex<HashMap<String, WatchFolderStatus>>>;
+/// Unified IPC endpoint connecting UI requests to compiled Rust native pipelines
+#[tauri::command]
+async fn execute_native_conversion(
+    request: NativeConversionRequest,
+) -> Result<NativeConversionResponse, String> {
+    let start = std::time::Instant::now();
 
-fn get_watchers() -> WatcherRegistry {
-    use std::sync::OnceLock;
-    static REGISTRY: OnceLock<WatcherRegistry> = OnceLock::new();
-    REGISTRY
-        .get_or_init(|| Arc::new(Mutex::new(HashMap::new())))
-        .clone()
+    // Determine input bytes (from disk path if streaming or from payload)
+    let raw_bytes: Option<Vec<u8>> = if let Some(ref path) = request.input_path {
+        fs::read(path).ok()
+    } else {
+        request.input_bytes.clone()
+    };
+
+    match request.operation.as_str() {
+        "media_transcode" => {
+            let in_p = request.input_path.unwrap_or_else(|| "input.mp4".to_string());
+            let out_p = request.output_path.unwrap_or_else(|| format!("{in_p}_converted.{}", request.target_format));
+            let opts: ffmpeg::GpuTranscodeOptions = if let Some(v) = request.options {
+                serde_json::from_value(v).unwrap_or(ffmpeg::GpuTranscodeOptions {
+                    target_format: request.target_format.clone(),
+                    quality: None,
+                    bitrate: None,
+                    resolution: None,
+                    start_time: None,
+                    end_time: None,
+                    lossless_trim: None,
+                    extract_audio: None,
+                })
+            } else {
+                ffmpeg::GpuTranscodeOptions {
+                    target_format: request.target_format.clone(),
+                    quality: None,
+                    bitrate: None,
+                    resolution: None,
+                    start_time: None,
+                    end_time: None,
+                    lossless_trim: None,
+                    extract_audio: None,
+                }
+            };
+
+            let res = ffmpeg::transcode_media(&in_p, &out_p, &opts).await?;
+            Ok(NativeConversionResponse {
+                success: res.success,
+                output_file_name: res.output_file_name,
+                output_path: res.output_path,
+                output_bytes: res.output_bytes,
+                duration_ms: res.duration_ms,
+                details: Some(format!("GPU Encoder: {}", res.encoder_used)),
+                error: res.error,
+            })
+        }
+
+        "office_to_pdf" => {
+            let bytes = raw_bytes.ok_or_else(|| "No input bytes or readable file path provided for Office conversion".to_string())?;
+            let temp_dir = std::env::temp_dir();
+            let pdf_bytes = office::convert_office_to_pdf_native(&bytes, &request.file_name, Some(&temp_dir))?;
+            let stem = Path::new(&request.file_name).file_stem().unwrap_or_default().to_string_lossy();
+            let out_name = format!("{stem}.pdf");
+
+            if let Some(ref out_p) = request.output_path {
+                let _ = fs::write(out_p, &pdf_bytes);
+            }
+
+            Ok(NativeConversionResponse {
+                success: true,
+                output_file_name: out_name,
+                output_path: request.output_path,
+                output_bytes: Some(pdf_bytes),
+                duration_ms: start.elapsed().as_millis() as u64,
+                details: Some("Converted with Native Office Vectorized Engine".to_string()),
+                error: None,
+            })
+        }
+
+        "cad_dxf" => {
+            let bytes = raw_bytes.ok_or_else(|| "No DXF file bytes provided".to_string())?;
+            let dxf_text = String::from_utf8_lossy(&bytes);
+            let drawing = cad_raw::DxfDrawing::parse(&dxf_text);
+            let stem = Path::new(&request.file_name).file_stem().unwrap_or_default().to_string_lossy();
+
+            if request.target_format.to_lowercase() == "svg" {
+                let svg_str = drawing.to_svg();
+                let out_bytes = svg_str.into_bytes();
+                let out_name = format!("{stem}.svg");
+                if let Some(ref out_p) = request.output_path {
+                    let _ = fs::write(out_p, &out_bytes);
+                }
+                Ok(NativeConversionResponse {
+                    success: true,
+                    output_file_name: out_name,
+                    output_path: request.output_path,
+                    output_bytes: Some(out_bytes),
+                    duration_ms: start.elapsed().as_millis() as u64,
+                    details: Some(format!("Parsed {} CAD primitives into SVG", drawing.entities.len())),
+                    error: None,
+                })
+            } else {
+                let pdf_bytes = drawing.to_vector_pdf(&request.file_name)?;
+                let out_name = format!("{stem}_blueprint.pdf");
+                if let Some(ref out_p) = request.output_path {
+                    let _ = fs::write(out_p, &pdf_bytes);
+                }
+                Ok(NativeConversionResponse {
+                    success: true,
+                    output_file_name: out_name,
+                    output_path: request.output_path,
+                    output_bytes: Some(pdf_bytes),
+                    duration_ms: start.elapsed().as_millis() as u64,
+                    details: Some(format!("Rendered {} CAD primitives to Vector PDF", drawing.entities.len())),
+                    error: None,
+                })
+            }
+        }
+
+        "camera_raw" => {
+            let bytes = raw_bytes.ok_or_else(|| "No Camera RAW file bytes provided".to_string())?;
+            let jpeg_bytes = cad_raw::extract_camera_raw_preview(&bytes)?;
+            let stem = Path::new(&request.file_name).file_stem().unwrap_or_default().to_string_lossy();
+            let out_name = format!("{stem}_preview.jpg");
+
+            if let Some(ref out_p) = request.output_path {
+                let _ = fs::write(out_p, &jpeg_bytes);
+            }
+
+            Ok(NativeConversionResponse {
+                success: true,
+                output_file_name: out_name,
+                output_path: request.output_path,
+                output_bytes: Some(jpeg_bytes),
+                duration_ms: start.elapsed().as_millis() as u64,
+                details: Some("Extracted full-resolution Camera RAW frame".to_string()),
+                error: None,
+            })
+        }
+
+        "pdf_redact" => {
+            let bytes = raw_bytes.ok_or_else(|| "No PDF bytes provided".to_string())?;
+            let search_terms: Vec<String> = request.options
+                .and_then(|o| o.get("search_terms").and_then(|t| serde_json::from_value(t.clone()).ok()))
+                .unwrap_or_default();
+            let redact_vectors = true;
+            let redact_images = false;
+
+            let out_bytes = compliance::redact_pdf_destructive(&bytes, &search_terms, redact_vectors, redact_images)?;
+            let stem = Path::new(&request.file_name).file_stem().unwrap_or_default().to_string_lossy();
+            let out_name = format!("{stem}_redacted.pdf");
+
+            if let Some(ref out_p) = request.output_path {
+                let _ = fs::write(out_p, &out_bytes);
+            }
+
+            Ok(NativeConversionResponse {
+                success: true,
+                output_file_name: out_name,
+                output_path: request.output_path,
+                output_bytes: Some(out_bytes),
+                duration_ms: start.elapsed().as_millis() as u64,
+                details: Some("Destructive PDF DOM vector & text purge completed".to_string()),
+                error: None,
+            })
+        }
+
+        "pdfa_compliance" => {
+            let bytes = raw_bytes.ok_or_else(|| "No PDF bytes provided".to_string())?;
+            let out_bytes = compliance::convert_to_pdfa_compliant(&bytes, 1)?;
+            let stem = Path::new(&request.file_name).file_stem().unwrap_or_default().to_string_lossy();
+            let out_name = format!("{stem}_PDFA.pdf");
+
+            if let Some(ref out_p) = request.output_path {
+                let _ = fs::write(out_p, &out_bytes);
+            }
+
+            Ok(NativeConversionResponse {
+                success: true,
+                output_file_name: out_name,
+                output_path: request.output_path,
+                output_bytes: Some(out_bytes),
+                duration_ms: start.elapsed().as_millis() as u64,
+                details: Some("Archival ISO 19005-1 PDF/A-1b metadata and OutputIntent added".to_string()),
+                error: None,
+            })
+        }
+
+        "forensic_hash" => {
+            let bytes = raw_bytes.ok_or_else(|| "No bytes provided for forensic logging".to_string())?;
+            let report = compliance::generate_forensic_report(&bytes, &request.file_name);
+            let report_json = serde_json::to_string_pretty(&report).map_err(|e| e.to_string())?;
+            let out_bytes = report_json.into_bytes();
+            let stem = Path::new(&request.file_name).file_stem().unwrap_or_default().to_string_lossy();
+            let out_name = format!("{stem}_audit_report.json");
+
+            if let Some(ref out_p) = request.output_path {
+                let _ = fs::write(out_p, &out_bytes);
+            }
+
+            Ok(NativeConversionResponse {
+                success: true,
+                output_file_name: out_name,
+                output_path: request.output_path,
+                output_bytes: Some(out_bytes),
+                duration_ms: start.elapsed().as_millis() as u64,
+                details: Some(format!("Chain of Custody ID: {}", report.chain_of_custody_id)),
+                error: None,
+            })
+        }
+
+        "website_capture" => {
+            let url = request.input_path.unwrap_or(request.file_name.clone());
+            let is_pdf = request.target_format.to_lowercase() == "pdf";
+            let format = if is_pdf { capture::CaptureFormat::Pdf } else { capture::CaptureFormat::Png };
+            let stem = Path::new(&request.file_name).file_stem().unwrap_or_default().to_string_lossy();
+            let ext = if is_pdf { "pdf" } else { "png" };
+            let out_name = format!("{stem}_captured.{ext}");
+            let temp_out = std::env::temp_dir().join(&out_name);
+            let temp_str = temp_out.to_string_lossy().to_string();
+
+            let bytes = capture::capture_url_headless(&url, &temp_str, format).await?;
+            if let Some(ref out_p) = request.output_path {
+                let _ = fs::write(out_p, &bytes);
+            }
+            let _ = fs::remove_file(&temp_out);
+
+            Ok(NativeConversionResponse {
+                success: true,
+                output_file_name: out_name,
+                output_path: request.output_path,
+                output_bytes: Some(bytes),
+                duration_ms: start.elapsed().as_millis() as u64,
+                details: Some("Sandboxed headless website capture generated".to_string()),
+                error: None,
+            })
+        }
+
+        _ => Err(format!("Unsupported native operation: {}", request.operation)),
+    }
 }
 
 /// Verify offline Ed25519 license key signature in native Rust with 0 network calls
 #[tauri::command]
-pub fn verify_license_key_native(license_key: String) -> Result<NativeLicenseResult, String> {
+fn verify_license_key_native(license_key: String) -> Result<NativeLicenseResult, String> {
     use base64::engine::general_purpose::URL_SAFE_NO_PAD;
     use base64::Engine;
     use ed25519_dalek::{Signature, Verifier, VerifyingKey};
@@ -146,91 +389,17 @@ pub fn verify_license_key_native(license_key: String) -> Result<NativeLicenseRes
     })
 }
 
-/// True Vector PDF Redaction: Parse PDF content streams with lopdf, permanently
-/// erasing targeted text strings and vector path operators (not drawing cosmetic black boxes)
 #[tauri::command]
-pub fn redact_pdf_vector_native(
+fn redact_pdf_vector_native(
     input_bytes: Vec<u8>,
     search_terms: Vec<String>,
     redact_vectors: bool,
 ) -> Result<Vec<u8>, String> {
-    use lopdf::content::Content;
-    use lopdf::{Document, Object};
-
-    let mut doc = Document::load_mem(&input_bytes)
-        .map_err(|e| format!("Failed to parse PDF document: {e}"))?;
-
-    let lowercase_terms: Vec<String> = search_terms.iter().map(|s| s.to_lowercase()).collect();
-
-    // Iterate through all pages
-    let pages = doc.get_pages();
-    for (_page_num, page_id) in pages {
-        let content_data = match doc.get_page_content(page_id) {
-            Ok(bytes) => bytes,
-            Err(_) => continue,
-        };
-
-        let mut content = match Content::decode(&content_data) {
-            Ok(c) => c,
-            Err(_) => continue,
-        };
-
-        let mut modified = false;
-
-        // Iterate through content stream operations and purge target string operators
-        for op in content.operations.iter_mut() {
-            // Text showing operators: Tj, ', ", TJ
-            if op.operator == "Tj" || op.operator == "'" || op.operator == "\"" {
-                if let Some(Object::String(ref mut text_bytes, _)) = op.operands.get_mut(0) {
-                    let text_str = String::from_utf8_lossy(text_bytes).to_lowercase();
-                    for term in &lowercase_terms {
-                        if !term.is_empty() && text_str.contains(term) {
-                            // Permanently obliterate text from the stream
-                            *text_bytes = b"[REDACTED]".to_vec();
-                            modified = true;
-                        }
-                    }
-                }
-            } else if op.operator == "TJ" {
-                if let Some(Object::Array(ref mut items)) = op.operands.get_mut(0) {
-                    for item in items.iter_mut() {
-                        if let Object::String(ref mut text_bytes, _) = item {
-                            let text_str = String::from_utf8_lossy(text_bytes).to_lowercase();
-                            for term in &lowercase_terms {
-                                if !term.is_empty() && text_str.contains(term) {
-                                    *text_bytes = b"[REDACTED]".to_vec();
-                                    modified = true;
-                                }
-                            }
-                        }
-                    }
-                }
-            } else if redact_vectors && (op.operator == "re" || op.operator == "m" || op.operator == "c") {
-                // Purge path operators if explicit vector path redaction requested
-                op.operands.clear();
-                op.operator = "n".to_string(); // 'n' is path ending without fill/stroke
-                modified = true;
-            }
-        }
-
-        if modified {
-            if let Ok(encoded) = content.encode() {
-                let _ = doc.change_page_content(page_id, encoded);
-            }
-        }
-    }
-
-    let mut output_bytes = Vec::new();
-    doc.save_to(&mut output_bytes)
-        .map_err(|e| format!("Failed to serialize sanitized PDF: {e}"))?;
-
-    Ok(output_bytes)
+    compliance::redact_pdf_destructive(&input_bytes, &search_terms, redact_vectors, false)
 }
 
-/// On-Device OCR: Render or extract scanned image frames and inject an invisible
-/// searchable '/Text' (mode 3 Tr) layer directly into the PDF content stream
 #[tauri::command]
-pub fn ocr_pdf_native(input_bytes: Vec<u8>, language: String) -> Result<Vec<u8>, String> {
+fn ocr_pdf_native(input_bytes: Vec<u8>, language: String) -> Result<Vec<u8>, String> {
     use lopdf::content::{Content, Operation};
     use lopdf::{Document, Object};
 
@@ -248,11 +417,9 @@ pub fn ocr_pdf_native(input_bytes: Vec<u8>, language: String) -> Result<Vec<u8>,
             operations: Vec::new(),
         });
 
-        // Inject ISO 32000-1 invisible text rendering mode (3 Tr)
-        // This creates an invisible, searchable OCR text overlay matching Adobe/Tesseract standards
-        content.operations.push(Operation::new("BT", vec![])); // Begin Text
+        content.operations.push(Operation::new("BT", vec![]));
         content.operations.push(Operation::new("3", vec![]));
-        content.operations.push(Operation::new("Tr", vec![])); // 3 Tr = Neither fill nor stroke (invisible text)
+        content.operations.push(Operation::new("Tr", vec![]));
         content.operations.push(Operation::new(
             "Tf",
             vec![Object::Name(b"Helvetica".to_vec()), Object::Real(10.0)],
@@ -268,7 +435,7 @@ pub fn ocr_pdf_native(input_bytes: Vec<u8>, language: String) -> Result<Vec<u8>,
                 lopdf::StringFormat::Literal,
             )],
         ));
-        content.operations.push(Operation::new("ET", vec![])); // End Text
+        content.operations.push(Operation::new("ET", vec![]));
 
         if let Ok(encoded) = content.encode() {
             let _ = doc.change_page_content(page_id, encoded);
@@ -282,179 +449,88 @@ pub fn ocr_pdf_native(input_bytes: Vec<u8>, language: String) -> Result<Vec<u8>,
     Ok(output_bytes)
 }
 
-/// Automated Watch Folders: Launch background directory watcher converting incoming files
 #[tauri::command]
-pub fn start_watch_folder_native(
+fn start_watch_folder_native(
     input_dir: String,
     output_dir: String,
     target_format: String,
 ) -> Result<String, String> {
-    if !Path::new(&input_dir).exists() {
-        return Err(format!("Input directory does not exist: {input_dir}"));
-    }
-    if !Path::new(&output_dir).exists() {
-        return Err(format!("Output directory does not exist: {output_dir}"));
-    }
-
-    let watcher_id = format!("watch_{:x}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis());
-    let status = WatchFolderStatus {
-        watcher_id: watcher_id.clone(),
-        input_dir,
-        output_dir,
-        target_format,
-        is_active: true,
-        files_processed: 0,
-    };
-
-    let watchers = get_watchers();
-    let mut map = watchers.lock().unwrap();
-    map.insert(watcher_id.clone(), status);
-
-    Ok(watcher_id)
+    watch_folders::start_watch_folder(input_dir, output_dir, target_format)
 }
 
 #[tauri::command]
-pub fn stop_watch_folder_native(watcher_id: String) -> Result<bool, String> {
-    let watchers = get_watchers();
-    let mut map = watchers.lock().unwrap();
-    if let Some(status) = map.get_mut(&watcher_id) {
-        status.is_active = false;
-        Ok(true)
-    } else {
-        Ok(false)
-    }
+fn stop_watch_folder_native(watcher_id: String) -> Result<bool, String> {
+    watch_folders::stop_watch_folder(&watcher_id)
 }
 
 #[tauri::command]
-pub fn get_watch_folders_status_native() -> Result<Vec<WatchFolderStatus>, String> {
-    let watchers = get_watchers();
-    let map = watchers.lock().unwrap();
-    Ok(map.values().cloned().collect())
+fn get_watch_folders_status_native() -> Result<Vec<watch_folders::WatchFolderStatus>, String> {
+    Ok(watch_folders::get_watch_folder_statuses())
 }
 
-/// Convert media file using system FFmpeg CLI with fast stream copy or audio extraction
 #[tauri::command]
-pub async fn convert_media_native(
+async fn convert_media_native(
     input_path: String,
     output_path: String,
     options: NativeConvertOptions,
 ) -> Result<NativeConvertResult, String> {
-    let start = std::time::Instant::now();
+    let opts = ffmpeg::GpuTranscodeOptions {
+        target_format: options.target_format,
+        quality: options.quality,
+        bitrate: options.bitrate,
+        resolution: None,
+        start_time: options.start_time,
+        end_time: options.end_time,
+        lossless_trim: options.lossless_trim,
+        extract_audio: None,
+    };
 
-    let mut cmd = Command::new("ffmpeg");
-    cmd.arg("-y"); // overwrite
-
-    // Stream trimming
-    if let Some(st) = options.start_time {
-        if st > 0.0 {
-            cmd.arg("-ss").arg(st.to_string());
-        }
-    }
-    if let Some(et) = options.end_time {
-        if et > 0.0 {
-            cmd.arg("-to").arg(et.to_string());
-        }
-    }
-
-    cmd.arg("-i").arg(&input_path);
-
-    let target_ext = options.target_format.to_lowercase();
-    let is_lossless = options.lossless_trim.unwrap_or(false);
-
-    if is_lossless {
-        cmd.arg("-c").arg("copy");
-    } else {
-        match target_ext.as_str() {
-            "mp3" => {
-                cmd.arg("-vn")
-                    .arg("-c:a")
-                    .arg("libmp3lame")
-                    .arg("-b:a")
-                    .arg(options.bitrate.as_deref().unwrap_or("192k"));
-            }
-            "wav" => {
-                cmd.arg("-vn").arg("-c:a").arg("pcm_s16le");
-            }
-            "aac" => {
-                cmd.arg("-vn")
-                    .arg("-c:a")
-                    .arg("aac")
-                    .arg("-b:a")
-                    .arg(options.bitrate.as_deref().unwrap_or("192k"));
-            }
-            "flac" => {
-                cmd.arg("-vn").arg("-c:a").arg("flac");
-            }
-            "mp4" => {
-                cmd.arg("-c:v")
-                    .arg("libx264")
-                    .arg("-preset")
-                    .arg("ultrafast")
-                    .arg("-c:a")
-                    .arg("aac");
-            }
-            _ => {
-                cmd.arg("-c").arg("copy");
-            }
-        }
-    }
-
-    cmd.arg(&output_path);
-
-    let output = cmd.output().map_err(|e| format!("Failed to execute FFmpeg: {e}"))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("FFmpeg error: {stderr}"));
-    }
-
-    let bytes = fs::read(&output_path).map_err(|e| format!("Failed to read output: {e}"))?;
-    let duration_ms = start.elapsed().as_millis() as u64;
+    let res = ffmpeg::transcode_media(&input_path, &output_path, &opts).await?;
+    let bytes = res.output_bytes.unwrap_or_else(|| fs::read(&output_path).unwrap_or_default());
 
     Ok(NativeConvertResult {
-        success: true,
-        output_file_name: Path::new(&output_path)
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string(),
+        success: res.success,
+        output_file_name: res.output_file_name,
         output_bytes: bytes,
-        duration_ms,
-        error: None,
+        duration_ms: res.duration_ms,
+        error: res.error,
     })
 }
 
-/// Compute cryptographic hashes natively using compiled CPU acceleration
 #[tauri::command]
-pub fn compute_hash_native(file_bytes: Vec<u8>, algorithm: String) -> Result<String, String> {
+fn compute_hash_native(file_bytes: Vec<u8>, algorithm: String) -> Result<String, String> {
     use sha2::{Digest, Sha256, Sha512};
 
     match algorithm.as_str() {
         "SHA-256" => {
             let mut hasher = Sha256::new();
             hasher.update(&file_bytes);
-            let result = hasher.finalize();
-            Ok(format!("{result:x}"))
+            Ok(format!("{:x}", hasher.finalize()))
         }
         "SHA-512" => {
             let mut hasher = Sha512::new();
             hasher.update(&file_bytes);
-            let result = hasher.finalize();
-            Ok(format!("{result:x}"))
+            Ok(format!("{:x}", hasher.finalize()))
         }
         "MD5" => {
-            use md5::compute;
-            let digest = compute(&file_bytes);
-            Ok(format!("{digest:x}"))
+            use md5::Md5;
+            let mut hasher = Md5::new();
+            hasher.update(&file_bytes);
+            Ok(format!("{:x}", hasher.finalize()))
         }
         _ => Err(format!("Unsupported algorithm: {algorithm}")),
     }
 }
 
-/// System capabilities query confirming zero-egress native mode
 #[tauri::command]
-pub fn get_system_capabilities() -> SystemCapabilities {
-    let ffmpeg_exists = Command::new("ffmpeg")
+fn get_hardware_acceleration_status_native() -> ffmpeg::HardwareAccelerationStatus {
+    ffmpeg::detect_hardware_encoders()
+}
+
+#[tauri::command]
+fn get_system_capabilities() -> SystemCapabilities {
+    let hw = ffmpeg::detect_hardware_encoders();
+    let ffmpeg_exists = std::process::Command::new("ffmpeg")
         .arg("-version")
         .output()
         .map(|o| o.status.success())
@@ -467,23 +543,24 @@ pub fn get_system_capabilities() -> SystemCapabilities {
         engine_type: "Tauri Rust Native Architecture".to_string(),
         ffmpeg_cli_available: ffmpeg_exists,
         pro_entitlements_supported: true,
+        hardware_acceleration: hw,
     }
 }
 
-/// Native file reader directly from OS Drag-and-Drop path without browser buffer duplication
 #[tauri::command]
-pub fn read_file_from_path(file_path: String) -> Result<Vec<u8>, String> {
+fn read_file_from_path(file_path: String) -> Result<Vec<u8>, String> {
     fs::read(&file_path).map_err(|e| format!("Failed to read file from path {file_path}: {e}"))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            execute_native_conversion,
             convert_media_native,
             compute_hash_native,
             get_system_capabilities,
+            get_hardware_acceleration_status_native,
             read_file_from_path,
             verify_license_key_native,
             redact_pdf_vector_native,

@@ -13,17 +13,16 @@
     "windows": [
       {
         "title": "ZeroEgress — Air-Gapped Utility Suite",
-        "width": 1050,
-        "height": 750,
-        "minWidth": 900,
-        "minHeight": 650,
+        "width": 1200,
+        "height": 800,
+        "minWidth": 1000,
+        "minHeight": 700,
         "resizable": true,
         "fullscreen": false,
         "decorations": true,
         "transparent": false,
-        "theme": "Auto",
-        "center": true,
-        "fileDropEnabled": true
+        "theme": "Dark",
+        "center": true
       }
     ],
     "security": {

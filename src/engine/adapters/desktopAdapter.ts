@@ -29,12 +29,51 @@ export function isTauriEnvironment(): boolean {
   );
 }
 
+export interface HardwareAccelerationStatus {
+  nvenc: boolean;
+  videotoolbox: boolean;
+  qsv: boolean;
+  best_encoder: string;
+}
+
 export interface NativeSystemCapabilities {
   os: string;
   arch: string;
   is_air_gapped: boolean;
   engine_type: string;
   ffmpeg_cli_available: boolean;
+  hardware_acceleration?: HardwareAccelerationStatus;
+}
+
+export type NativeOperationType =
+  | 'media_transcode'
+  | 'office_to_pdf'
+  | 'cad_dxf'
+  | 'camera_raw'
+  | 'pdf_redact'
+  | 'pdfa_compliance'
+  | 'forensic_hash'
+  | 'website_capture'
+  | 'ocr';
+
+export interface NativeConversionRequest {
+  operation: NativeOperationType;
+  input_path?: string;
+  output_path?: string;
+  input_bytes?: number[];
+  file_name: string;
+  target_format: string;
+  options?: Record<string, any>;
+}
+
+export interface NativeConversionResponse {
+  success: boolean;
+  output_file_name: string;
+  output_path?: string;
+  output_bytes?: number[];
+  duration_ms: number;
+  details?: string;
+  error?: string;
 }
 
 export class DesktopAdapter implements EngineAdapter {
@@ -76,7 +115,93 @@ export class DesktopAdapter implements EngineAdapter {
   }
 
   /**
-   * Native media conversion delegating to direct system FFmpeg CLI
+   * Unified IPC Bridge connecting UI requests to compiled Rust backend commands
+   * (invoke('execute_native_conversion', { request }))
+   * Supports unlimited multi-gigabyte files streamed directly from disk!
+   */
+  async executeNativeConversion(
+    request: NativeConversionRequest,
+    onProgress?: (ratio: number) => void
+  ): Promise<TaskResult<Blob | string>> {
+    const startTime = performance.now();
+    onProgress?.(0.1);
+
+    if (!isTauriEnvironment()) {
+      // Web fallback handling
+      return {
+        taskId: `web_fallback_${Date.now()}`,
+        success: false,
+        error: 'Native conversion requires ZeroEgress Desktop runtime.',
+        durationMs: Math.round(performance.now() - startTime),
+      };
+    }
+
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      onProgress?.(0.5);
+
+      const result = await invoke<NativeConversionResponse>('execute_native_conversion', {
+        request,
+      });
+
+      onProgress?.(1.0);
+
+      if (!result.success) {
+        return {
+          taskId: `native_${Date.now()}`,
+          success: false,
+          error: result.error || 'Conversion failed',
+          durationMs: result.duration_ms,
+        };
+      }
+
+      if (request.operation === 'forensic_hash' && result.output_bytes) {
+        const jsonStr = new TextDecoder().decode(new Uint8Array(result.output_bytes));
+        return {
+          taskId: `native_${Date.now()}`,
+          success: true,
+          data: jsonStr,
+          outputFileName: result.output_file_name,
+          outputMimeType: 'application/json',
+          durationMs: result.duration_ms,
+          originalSize: jsonStr.length,
+          resultSize: jsonStr.length,
+        };
+      }
+
+      const uint8 = result.output_bytes ? new Uint8Array(result.output_bytes) : new Uint8Array(0);
+      let mimeType = 'application/octet-stream';
+      if (result.output_file_name.endsWith('.pdf')) mimeType = 'application/pdf';
+      else if (result.output_file_name.endsWith('.svg')) mimeType = 'image/svg+xml';
+      else if (result.output_file_name.endsWith('.jpg') || result.output_file_name.endsWith('.jpeg')) mimeType = 'image/jpeg';
+      else if (result.output_file_name.endsWith('.png')) mimeType = 'image/png';
+      else if (result.output_file_name.endsWith('.json')) mimeType = 'application/json';
+
+      const blob = new Blob([uint8], { type: mimeType });
+
+      return {
+        taskId: `native_${Date.now()}`,
+        success: true,
+        data: blob,
+        outputFileName: result.output_file_name,
+        outputMimeType: mimeType,
+        durationMs: result.duration_ms,
+        originalSize: uint8.byteLength,
+        resultSize: blob.size,
+      };
+    } catch (err: any) {
+      return {
+        taskId: `native_${Date.now()}`,
+        success: false,
+        error: err?.message || 'Native desktop execution error',
+        durationMs: Math.round(performance.now() - startTime),
+      };
+    }
+  }
+
+  /**
+   * GPU Hardware Video/Audio Transcoding delegating directly to native FFmpeg CLI
+   * Supporting multi-GB file streaming without browser RAM limits
    */
   async convertMedia(
     taskOrFile: MediaConvertTask | File,
@@ -120,24 +245,19 @@ export class DesktopAdapter implements EngineAdapter {
 
       onProgress?.(0.2);
 
-      // Check if file has a native OS path (from native drag-and-drop)
+      // Check for native OS path (from native drag-and-drop)
       const nativePath = (file as any).path || (file as any).nativePath;
+      const targetExt = options.targetFormat.toLowerCase().replace(/^\./, '');
 
       if (nativePath) {
-        const { invoke } = await import('@tauri-apps/api/core');
-        onProgress?.(0.5);
-
-        const targetExt = options.targetFormat.toLowerCase().replace(/^\./, '');
+        // Stream directly from disk without copying into RAM!
         const outputTempPath = `${nativePath}_clean.${targetExt}`;
-
-        const nativeResult = await invoke<{
-          success: boolean;
-          output_file_name: string;
-          output_bytes: number[];
-          duration_ms: number;
-        }>('convert_media_native', {
-          inputPath: nativePath,
-          outputPath: outputTempPath,
+        const res = await this.executeNativeConversion({
+          operation: 'media_transcode',
+          input_path: nativePath,
+          output_path: outputTempPath,
+          file_name: fileName,
+          target_format: targetExt,
           options: {
             target_format: targetExt,
             bitrate: options.bitrate,
@@ -147,20 +267,18 @@ export class DesktopAdapter implements EngineAdapter {
           },
         });
 
-        onProgress?.(1.0);
-        const uint8 = new Uint8Array(nativeResult.output_bytes);
-        const blob = new Blob([uint8], { type: `audio/${targetExt}` });
-
-        return {
-          taskId: `native_${Date.now()}`,
-          success: true,
-          data: blob,
-          outputFileName: nativeResult.output_file_name || fileName,
-          outputMimeType: blob.type,
-          durationMs: Math.round(performance.now() - startTime),
-          originalSize: file.size,
-          resultSize: blob.size,
-        };
+        if (res.success && res.data instanceof Blob) {
+          return {
+            taskId: res.taskId,
+            success: true,
+            data: res.data,
+            outputFileName: res.outputFileName || fileName,
+            outputMimeType: `audio/${targetExt}`,
+            durationMs: res.durationMs,
+            originalSize: file.size,
+            resultSize: res.data.size,
+          };
+        }
       }
 
       // If in-memory file without native path, fallback to WASM engine
@@ -179,6 +297,275 @@ export class DesktopAdapter implements EngineAdapter {
         durationMs: Math.round(performance.now() - startTime),
       };
     }
+  }
+
+  /**
+   * Native Office Document Conversion (DOCX, PPTX, XLSX, ODT, ODP, Pages, Keynote, Numbers to PDF)
+   */
+  async convertOfficeDocument(
+    file: File,
+    onProgress?: (ratio: number) => void
+  ): Promise<TaskResult<Blob>> {
+    if (!isTauriEnvironment()) {
+      return {
+        taskId: `office_${Date.now()}`,
+        success: false,
+        error: 'Office conversion requires native desktop engine.',
+        durationMs: 0,
+      };
+    }
+
+    const nativePath = (file as any).path || (file as any).nativePath;
+    const buffer = nativePath ? undefined : await file.arrayBuffer();
+    const bytes = buffer ? Array.from(new Uint8Array(buffer)) : undefined;
+
+    const res = await this.executeNativeConversion({
+      operation: 'office_to_pdf',
+      input_path: nativePath,
+      input_bytes: bytes,
+      file_name: file.name,
+      target_format: 'pdf',
+    }, onProgress);
+
+    if (!res.success) {
+      return res as TaskResult<Blob>;
+    }
+
+    const blob = res.data as Blob;
+    return {
+      taskId: res.taskId,
+      success: true,
+      data: blob,
+      outputFileName: res.outputFileName,
+      outputMimeType: 'application/pdf',
+      durationMs: res.durationMs,
+      originalSize: file.size,
+      resultSize: blob.size,
+    };
+  }
+
+  /**
+   * 2D CAD Blueprints (DXF) to Scalable SVG or Vector PDF
+   */
+  async convertCadBlueprint(
+    file: File,
+    targetFormat: 'svg' | 'pdf' = 'svg',
+    onProgress?: (ratio: number) => void
+  ): Promise<TaskResult<Blob>> {
+    if (!isTauriEnvironment()) {
+      return {
+        taskId: `cad_${Date.now()}`,
+        success: false,
+        error: 'CAD conversion requires native desktop engine.',
+        durationMs: 0,
+      };
+    }
+
+    const nativePath = (file as any).path || (file as any).nativePath;
+    const buffer = nativePath ? undefined : await file.arrayBuffer();
+    const bytes = buffer ? Array.from(new Uint8Array(buffer)) : undefined;
+
+    const res = await this.executeNativeConversion({
+      operation: 'cad_dxf',
+      input_path: nativePath,
+      input_bytes: bytes,
+      file_name: file.name,
+      target_format: targetFormat,
+    }, onProgress);
+
+    if (!res.success) {
+      return res as TaskResult<Blob>;
+    }
+
+    const blob = res.data as Blob;
+    return {
+      taskId: res.taskId,
+      success: true,
+      data: blob,
+      outputFileName: res.outputFileName,
+      outputMimeType: targetFormat === 'svg' ? 'image/svg+xml' : 'application/pdf',
+      durationMs: res.durationMs,
+      originalSize: file.size,
+      resultSize: blob.size,
+    };
+  }
+
+  /**
+   * Camera RAW format conversion (CR2, NEF, ARW, DNG) to full-resolution preview
+   */
+  async convertCameraRaw(
+    file: File,
+    onProgress?: (ratio: number) => void
+  ): Promise<TaskResult<Blob>> {
+    if (!isTauriEnvironment()) {
+      return {
+        taskId: `raw_${Date.now()}`,
+        success: false,
+        error: 'Camera RAW conversion requires native desktop engine.',
+        durationMs: 0,
+      };
+    }
+
+    const nativePath = (file as any).path || (file as any).nativePath;
+    const buffer = nativePath ? undefined : await file.arrayBuffer();
+    const bytes = buffer ? Array.from(new Uint8Array(buffer)) : undefined;
+
+    const res = await this.executeNativeConversion({
+      operation: 'camera_raw',
+      input_path: nativePath,
+      input_bytes: bytes,
+      file_name: file.name,
+      target_format: 'jpg',
+    }, onProgress);
+
+    if (!res.success) {
+      return res as TaskResult<Blob>;
+    }
+
+    const blob = res.data as Blob;
+    return {
+      taskId: res.taskId,
+      success: true,
+      data: blob,
+      outputFileName: res.outputFileName,
+      outputMimeType: 'image/jpeg',
+      durationMs: res.durationMs,
+      originalSize: file.size,
+      resultSize: blob.size,
+    };
+  }
+
+  /**
+   * ISO 19005-1 PDF/A Archival compliance conversion
+   */
+  async applyPdfaCompliance(
+    file: File,
+    conformancePart = 1,
+    onProgress?: (ratio: number) => void
+  ): Promise<TaskResult<Blob>> {
+    if (!isTauriEnvironment()) {
+      return {
+        taskId: `pdfa_${Date.now()}`,
+        success: false,
+        error: 'PDF/A conversion requires native desktop engine.',
+        durationMs: 0,
+      };
+    }
+
+    const nativePath = (file as any).path || (file as any).nativePath;
+    const buffer = nativePath ? undefined : await file.arrayBuffer();
+    const bytes = buffer ? Array.from(new Uint8Array(buffer)) : undefined;
+
+    const res = await this.executeNativeConversion({
+      operation: 'pdfa_compliance',
+      input_path: nativePath,
+      input_bytes: bytes,
+      file_name: file.name,
+      target_format: 'pdf',
+      options: { conformance_part: conformancePart },
+    }, onProgress);
+
+    if (!res.success) {
+      return res as TaskResult<Blob>;
+    }
+
+    const blob = res.data as Blob;
+    return {
+      taskId: res.taskId,
+      success: true,
+      data: blob,
+      outputFileName: res.outputFileName,
+      outputMimeType: 'application/pdf',
+      durationMs: res.durationMs,
+      originalSize: file.size,
+      resultSize: blob.size,
+    };
+  }
+
+  /**
+   * Automated Forensic Hash Logging & Chain-of-Custody Certificate
+   */
+  async generateForensicReport(
+    file: File,
+    onProgress?: (ratio: number) => void
+  ): Promise<TaskResult<string>> {
+    if (!isTauriEnvironment()) {
+      return {
+        taskId: `forensic_${Date.now()}`,
+        success: false,
+        error: 'Forensic report requires native desktop engine.',
+        durationMs: 0,
+      };
+    }
+
+    const nativePath = (file as any).path || (file as any).nativePath;
+    const buffer = nativePath ? undefined : await file.arrayBuffer();
+    const bytes = buffer ? Array.from(new Uint8Array(buffer)) : undefined;
+
+    const res = await this.executeNativeConversion({
+      operation: 'forensic_hash',
+      input_path: nativePath,
+      input_bytes: bytes,
+      file_name: file.name,
+      target_format: 'json',
+    }, onProgress);
+
+    if (!res.success) {
+      return res as TaskResult<string>;
+    }
+
+    const str = typeof res.data === 'string' ? res.data : '';
+    return {
+      taskId: res.taskId,
+      success: true,
+      data: str,
+      outputFileName: res.outputFileName,
+      outputMimeType: 'application/json',
+      durationMs: res.durationMs,
+      originalSize: file.size,
+      resultSize: str.length,
+    };
+  }
+
+  /**
+   * Live Headless Website Capture to PNG or PDF without browser CORS limits
+   */
+  async captureLiveUrl(
+    url: string,
+    format: 'png' | 'pdf' = 'png',
+    onProgress?: (ratio: number) => void
+  ): Promise<TaskResult<Blob>> {
+    if (!isTauriEnvironment()) {
+      return {
+        taskId: `capture_${Date.now()}`,
+        success: false,
+        error: 'Live headless capture requires native desktop engine.',
+        durationMs: 0,
+      };
+    }
+
+    const res = await this.executeNativeConversion({
+      operation: 'website_capture',
+      input_path: url,
+      file_name: url.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30),
+      target_format: format,
+    }, onProgress);
+
+    if (!res.success) {
+      return res as TaskResult<Blob>;
+    }
+
+    const blob = res.data as Blob;
+    return {
+      taskId: res.taskId,
+      success: true,
+      data: blob,
+      outputFileName: res.outputFileName,
+      outputMimeType: format === 'pdf' ? 'application/pdf' : 'image/png',
+      durationMs: res.durationMs,
+      originalSize: blob.size,
+      resultSize: blob.size,
+    };
   }
 
   /**

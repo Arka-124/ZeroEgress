@@ -67,4 +67,42 @@ describe('Tauri Desktop Adapter & Native Shell Integration', () => {
     const statuses = await desktopAdapter.getWatchFolderStatuses();
     assert.ok(Array.isArray(statuses));
   });
+
+  it('exposes uncapped CloudConvert native suite capabilities on DesktopAdapter', async () => {
+    const desktopAdapter = new DesktopAdapter();
+    assert.strictEqual(typeof desktopAdapter.executeNativeConversion, 'function');
+    assert.strictEqual(typeof desktopAdapter.convertOfficeDocument, 'function');
+    assert.strictEqual(typeof desktopAdapter.convertCadBlueprint, 'function');
+    assert.strictEqual(typeof desktopAdapter.convertCameraRaw, 'function');
+    assert.strictEqual(typeof desktopAdapter.applyPdfaCompliance, 'function');
+    assert.strictEqual(typeof desktopAdapter.generateForensicReport, 'function');
+    assert.strictEqual(typeof desktopAdapter.captureLiveUrl, 'function');
+    assert.strictEqual(typeof desktopAdapter.setupNativeFileDrop, 'function');
+
+    // Outside Tauri window, methods gracefully report requirement or fallback
+    const dummyFile = new File(['test dummy content'], 'test.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const officeRes = await desktopAdapter.convertOfficeDocument(dummyFile);
+    assert.strictEqual(officeRes.success, false);
+    assert.ok(officeRes.error?.includes('native desktop engine'));
+
+    const cadFile = new File(['0\nSECTION\n0\nENDSEC\n0\nEOF'], 'blueprint.dxf', { type: 'application/dxf' });
+    const cadRes = await desktopAdapter.convertCadBlueprint(cadFile, 'svg');
+    assert.strictEqual(cadRes.success, false);
+    assert.ok(cadRes.error?.includes('native desktop engine'));
+
+    const rawFile = new File(['raw_test_data'], 'photo.cr2', { type: 'image/x-canon-cr2' });
+    const rawRes = await desktopAdapter.convertCameraRaw(rawFile);
+    assert.strictEqual(rawRes.success, false);
+
+    const pdfaFile = new File(['%PDF-1.7 dummy'], 'doc.pdf', { type: 'application/pdf' });
+    const pdfaRes = await desktopAdapter.applyPdfaCompliance(pdfaFile);
+    assert.strictEqual(pdfaRes.success, false);
+
+    const forensicRes = await desktopAdapter.generateForensicReport(pdfaFile);
+    assert.strictEqual(forensicRes.success, false);
+
+    const captureRes = await desktopAdapter.captureLiveUrl('https://localhost:5173');
+    assert.strictEqual(captureRes.success, false);
+  });
 });
+

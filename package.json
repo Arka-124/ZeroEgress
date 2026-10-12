@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "test": "node --test test/*.test.ts",
     "lint": "oxlint src test",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15",
