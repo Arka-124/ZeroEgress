@@ -87,8 +87,211 @@
         ]
       }
     </script>
+    <!-- Critical Inline Styles for Cinematic Preloader -->
+    <style>
+      #app-preloader {
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        background: #09090b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        transition: opacity 0.85s cubic-bezier(0.7, 0, 0.25, 1);
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      #app-preloader.is-exiting {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .preloader-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        transform-origin: center center;
+        will-change: transform, opacity, filter;
+      }
+
+      .preloader-badge {
+        width: 120px;
+        height: 120px;
+        border-radius: 28px;
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(16, 185, 129, 0.35);
+        box-shadow: 0 0 35px rgba(16, 185, 129, 0.2), inset 0 0 15px rgba(16, 185, 129, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+        animation: preloaderPulse 2s ease-in-out infinite;
+      }
+
+      .preloader-emblem {
+        width: 64px;
+        height: 64px;
+        object-fit: contain;
+        filter: drop-shadow(0 0 14px rgba(16, 185, 129, 0.5));
+      }
+
+      .preloader-title {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        color: #f4f4f5;
+        margin: 0 0 8px 0;
+        line-height: 1.2;
+        text-indent: 0.2em;
+      }
+
+      .preloader-subtitle {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.28em;
+        color: #10b981;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin: 0;
+        line-height: 1.4;
+        text-indent: 0.28em;
+      }
+
+      @keyframes preloaderPulse {
+        0%, 100% {
+          transform: scale(1);
+          filter: drop-shadow(0 0 0px transparent);
+        }
+        50% {
+          transform: scale(1.05);
+          filter: drop-shadow(0 0 28px rgba(16, 185, 129, 0.4));
+        }
+      }
+
+      @keyframes netflixExpandFade {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+          filter: blur(0px);
+        }
+        25% {
+          transform: scale(1.35);
+          opacity: 0.95;
+        }
+        50% {
+          opacity: 0.65;
+          filter: blur(4px);
+        }
+        100% {
+          transform: scale(14);
+          opacity: 0;
+          filter: blur(16px);
+        }
+      }
+
+      #app-preloader.is-exiting .preloader-content {
+        animation: netflixExpandFade 0.85s cubic-bezier(0.7, 0, 0.25, 1) forwards;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .preloader-badge {
+          animation: none !important;
+        }
+        #app-preloader {
+          transition: opacity 0.4s ease !important;
+        }
+        #app-preloader.is-exiting .preloader-content {
+          animation: none !important;
+          opacity: 0 !important;
+          transition: opacity 0.4s ease !important;
+        }
+      }
+    </style>
   </head>
   <body class="bg-zinc-950 text-zinc-100 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen">
+    <!-- Inline Cinematic Critical Preloader (FogBot-inspired) -->
+    <div id="app-preloader" role="status" aria-label="Initializing ZeroEgress">
+      <div class="preloader-content">
+        <div class="preloader-badge">
+          <img
+            src="/favicon.svg"
+            alt="ZeroEgress Emblem"
+            class="preloader-emblem"
+            width="64"
+            height="64"
+          />
+        </div>
+        <div class="preloader-title">ZEROEGRESS</div>
+        <div class="preloader-subtitle">AIR-GAPPED CLIENT RUNTIME</div>
+      </div>
+    </div>
+
+    <!-- Preloader Lifecycle State Machine -->
+    <script>
+      (function () {
+        const startTime = performance.now();
+        const minDuration = 650;
+        const maxSafetyTimeout = 3200;
+        const exitDuration = 880;
+
+        let isDismissed = false;
+
+        function dismissPreloader() {
+          if (isDismissed) return;
+          isDismissed = true;
+
+          const preloader = document.getElementById('app-preloader');
+          if (!preloader) return;
+
+          const elapsed = performance.now() - startTime;
+          const remainingMs = Math.max(0, minDuration - elapsed);
+
+          setTimeout(function () {
+            preloader.classList.add('is-exiting');
+
+            setTimeout(function () {
+              if (preloader.parentNode) {
+                preloader.parentNode.removeChild(preloader);
+              }
+            }, exitDuration);
+          }, remainingMs);
+        }
+
+        // Safety Watchdog: Force dismissal after maxSafetyTimeout so user is never stuck
+        const watchdogTimer = setTimeout(function () {
+          dismissPreloader();
+        }, maxSafetyTimeout);
+
+        function onReady() {
+          clearTimeout(watchdogTimer);
+          dismissPreloader();
+        }
+
+        // Listen for window load
+        if (document.readyState === 'complete') {
+          onReady();
+        } else {
+          window.addEventListener('load', onReady, { once: true });
+        }
+
+        // Listen for React hydration mount
+        window.addEventListener('zeroegress:app-ready', onReady, { once: true });
+
+        // Fallback: DOMContentLoaded + buffer
+        document.addEventListener('DOMContentLoaded', function () {
+          setTimeout(onReady, 1000);
+        }, { once: true });
+      })();
+    </script>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

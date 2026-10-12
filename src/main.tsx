@@ -12,3 +12,8 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
+
+// Signal cinematic preloader that React bundle has mounted and rendered
+if (typeof window !== 'undefined') {
+  window.dispatchEvent(new Event('zeroegress:app-ready'));
+}

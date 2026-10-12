@@ -112,6 +112,9 @@ export const App: React.FC = () => {
     window.addEventListener('dragover', handleDragOver);
     window.addEventListener('drop', handleDrop);
 
+    // Signal cinematic preloader that App component has hydrated
+    window.dispatchEvent(new Event('zeroegress:app-ready'));
+
     return () => {
       window.removeEventListener('dragenter', handleDragEnter);
       window.removeEventListener('dragleave', handleDragLeave);
