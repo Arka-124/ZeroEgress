@@ -17,31 +17,36 @@ import {
   ScanText,
   Sparkles,
   Minimize2,
+  RotateCw,
+  ShieldCheck,
+  Stamp,
 } from 'lucide-react';
 import { Dropzone } from '../ui/Dropzone';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { PdfCompressor } from './PdfCompressor';
+import { PdfRotate } from './PdfRotate';
+import { PdfSecurity } from './PdfSecurity';
+import { PdfWatermark } from './PdfWatermark';
+import { PdfOcr } from './PdfOcr';
 import { engine } from '../../engine';
 import type { PdfMergeItem, TaskResultSuccess, PdfMetadata } from '../../engine/types';
 import { formatBytes, downloadBlob, downloadZip, parsePageRange } from '../../utils/fileUtils';
 import { hasEntitlement, SHOW_PRO_BADGES } from '../../engine/license/licenseVerifier.ts';
 
-type PdfToolMode = 'merge' | 'split' | 'compress' | 'redact' | 'ocr';
+type PdfToolMode = 'merge' | 'split' | 'compress' | 'rotate' | 'security' | 'watermark' | 'redact' | 'ocr';
 
 export interface PdfToolsProps {
   onOpenLicense?: () => void;
+  initialTab?: PdfToolMode;
 }
 
-export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
-  const [activeTab, setActiveTab] = useState<PdfToolMode>('merge');
+export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense, initialTab }) => {
+  const [activeTab, setActiveTab] = useState<PdfToolMode>(initialTab || 'merge');
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [hasVectorLic, setHasVectorLic] = useState(true);
-  const [hasOcrLic, setHasOcrLic] = useState(true);
-
   useEffect(() => {
     hasEntitlement('vector_pdf_redaction').then(setHasVectorLic).catch(() => {});
-    hasEntitlement('on_device_ocr').then(setHasOcrLic).catch(() => {});
   }, []);
 
   // --- MERGE STATE ---
@@ -81,18 +86,6 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
   const [isRedacting, setIsRedacting] = useState(false);
   const [redactProgress, setRedactProgress] = useState(0);
   const [redactedResult, setRedactedResult] = useState<{
-    blob: Blob;
-    name: string;
-    size: number;
-    durationMs: number;
-  } | null>(null);
-
-  // --- ON-DEVICE OCR STATE ---
-  const [ocrFile, setOcrFile] = useState<File | null>(null);
-  const [ocrLanguage, setOcrLanguage] = useState('eng');
-  const [isOcring, setIsOcring] = useState(false);
-  const [ocrProgress, setOcrProgress] = useState(0);
-  const [ocrResult, setOcrResult] = useState<{
     blob: Blob;
     name: string;
     size: number;
@@ -157,59 +150,6 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
   const handleDownloadRedacted = () => {
     if (redactedResult) {
       downloadBlob(redactedResult.blob, redactedResult.name);
-    }
-  };
-
-  // ===================== OCR HANDLERS =====================
-  const handleOcrFileAdded = (files: File[]) => {
-    const pdf = files.find((f) => f.type.includes('pdf') || f.name.endsWith('.pdf'));
-    if (!pdf) return;
-    setOcrFile(pdf);
-    setOcrResult(null);
-    setErrorAlert(null);
-  };
-
-  const executeOcr = async () => {
-    if (!ocrFile) return;
-    setIsOcring(true);
-    setOcrProgress(0);
-    setErrorAlert(null);
-
-    try {
-      const res = await engine.ocrPdf(
-        {
-          id: `ocr_${Date.now()}`,
-          type: 'pdf-ocr',
-          file: ocrFile,
-          fileName: ocrFile.name,
-          createdAt: Date.now(),
-          options: {
-            language: ocrLanguage,
-          },
-        },
-        (progress) => setOcrProgress(Math.round(progress * 100))
-      );
-
-      if (res.success) {
-        setOcrResult({
-          blob: res.data,
-          name: res.outputFileName,
-          size: res.resultSize,
-          durationMs: res.durationMs,
-        });
-      } else {
-        setErrorAlert(res.error);
-      }
-    } catch (err: any) {
-      setErrorAlert(err?.message || 'On-device OCR failed.');
-    } finally {
-      setIsOcring(false);
-    }
-  };
-
-  const handleDownloadOcr = () => {
-    if (ocrResult) {
-      downloadBlob(ocrResult.blob, ocrResult.name);
     }
   };
 
@@ -520,6 +460,45 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
           >
             <Minimize2 className="w-3.5 h-3.5 text-blue-400" />
             <span>Compress PDF</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('rotate')}
+            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
+              activeTab === 'rotate'
+                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <RotateCw className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Rotate</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('watermark')}
+            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
+              activeTab === 'watermark'
+                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Stamp className="w-3.5 h-3.5 text-purple-400" />
+            <span>Watermark</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('security')}
+            className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer min-h-[38px] flex-1 sm:flex-none ${
+              activeTab === 'security'
+                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+            <span>Security</span>
           </button>
 
           <button
@@ -1147,119 +1126,17 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
         </div>
       )}
 
-      {/* ======================= ON-DEVICE OCR VIEW (PRO) ======================= */}
-      {activeTab === 'ocr' && (
-        <div className="space-y-5">
-          {!hasOcrLic && (
-            <div className="p-3.5 rounded-xl border border-amber-950/70 bg-amber-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2.5 text-amber-300">
-                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>
-                  <strong>On-Device Scanned PDF OCR</strong> injects searchable ISO 32000-1 text layers without cloud APIs. Requires an offline license key or evaluation key.
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={onOpenLicense}
-                className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold text-xs transition-colors shrink-0 cursor-pointer"
-              >
-                Unlock Pro Features
-              </button>
-            </div>
-          )}
+      {/* ======================= ROTATE VIEW ======================= */}
+      {activeTab === 'rotate' && <PdfRotate />}
 
-          {!ocrFile ? (
-            <Dropzone
-              onFilesSelected={handleOcrFileAdded}
-              accept=".pdf,application/pdf"
-              title="Drop scanned PDF document to inject searchable text layer"
-              subtitle="Select PDF · Scanned raster images will have an invisible searchable text layer applied"
-              hint="100% On-Device · Zero Cloud Calls"
-            />
-          ) : (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-900/40">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-200">
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-zinc-100">{ocrFile.name}</p>
-                    <p className="text-[11px] font-mono text-zinc-400">{formatBytes(ocrFile.size)}</p>
-                  </div>
-                </div>
+      {/* ======================= WATERMARK VIEW ======================= */}
+      {activeTab === 'watermark' && <PdfWatermark />}
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setOcrFile(null);
-                    setOcrResult(null);
-                  }}
-                  icon={<X className="w-3.5 h-3.5" />}
-                >
-                  Change File
-                </Button>
-              </div>
+      {/* ======================= SECURITY VIEW ======================= */}
+      {activeTab === 'security' && <PdfSecurity />}
 
-              {/* OCR Controls */}
-              <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <label className="text-xs font-medium text-zinc-300">Document Language:</label>
-                  <select
-                    value={ocrLanguage}
-                    onChange={(e) => setOcrLanguage(e.target.value)}
-                    className="px-3 py-1.5 text-xs bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 font-mono focus:outline-none focus:border-zinc-600"
-                  >
-                    <option value="eng">English (eng)</option>
-                    <option value="deu">German (deu)</option>
-                    <option value="fra">French (fra)</option>
-                    <option value="spa">Spanish (spa)</option>
-                  </select>
-                </div>
-
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={executeOcr}
-                  loading={isOcring}
-                  icon={<ScanText className="w-3.5 h-3.5 text-amber-400" />}
-                >
-                  {isOcring ? `Generating OCR Layer (${ocrProgress}%)` : 'Inject Searchable Text Layer'}
-                </Button>
-              </div>
-
-              {/* OCR Result Download Card */}
-              {ocrResult && (
-                <div className="p-4 rounded-xl border border-emerald-900/40 bg-emerald-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-emerald-950 border border-emerald-800 flex items-center justify-center text-emerald-400">
-                      <FileCheck className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-emerald-300">
-                        Searchable OCR Layer Generated ({ocrResult.durationMs}ms)
-                      </p>
-                      <p className="text-[11px] font-mono text-zinc-400 mt-0.5">
-                        {ocrResult.name} · {formatBytes(ocrResult.size)} · Text search ready
-                      </p>
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleDownloadOcr}
-                    icon={<Download className="w-3.5 h-3.5" />}
-                  >
-                    Download Searchable PDF
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      {/* ======================= ON-DEVICE OCR VIEW ======================= */}
+      {activeTab === 'ocr' && <PdfOcr />}
     </div>
   );
 };

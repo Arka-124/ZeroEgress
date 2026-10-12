@@ -12,6 +12,10 @@ import {
   FileCode2,
   Archive,
   FileSpreadsheet,
+  Type,
+  BookOpen,
+  Camera,
+  ScanText,
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { ImageConverter } from './components/ImageConverter/ImageConverter';
@@ -22,7 +26,7 @@ import { WatchFolders } from './components/WatchFolders/WatchFolders';
 import { PrivacyInfo } from './components/PrivacyInfo';
 import { LicenseModal } from './components/License/LicenseModal';
 import { ArchitectureModal } from './components/Architecture/ArchitectureModal';
-import { SHOW_PRO_BADGES, SHOW_LICENSE_UI } from './engine/license/licenseVerifier';
+import { SHOW_LICENSE_UI } from './engine/license/licenseVerifier';
 
 // Reserved for native desktop shell release; hidden from web navigation bar
 const SHOW_WATCH_FOLDERS = false;
@@ -31,12 +35,31 @@ const SHOW_WATCH_FOLDERS = false;
 const MediaTools = React.lazy(() => import('./components/MediaTools/MediaTools'));
 const ArchiveTools = React.lazy(() => import('./components/ArchiveTools/ArchiveTools'));
 const SpreadsheetConverter = React.lazy(() => import('./components/SpreadsheetConverter/SpreadsheetConverter'));
+const VectorFontTools = React.lazy(() => import('./components/VectorFontTools/VectorFontTools'));
+const EbookTools = React.lazy(() => import('./components/EbookTools/EbookTools'));
+const CaptureTools = React.lazy(() => import('./components/CaptureTools/CaptureTools'));
 
-type ActiveTool = 'image' | 'pdf' | 'metadata' | 'data' | 'media' | 'archives' | 'spreadsheet' | 'watchfolders';
+type ActiveTool =
+  | 'image'
+  | 'pdf'
+  | 'vectorfont'
+  | 'ocrsec'
+  | 'ebooks'
+  | 'capture'
+  | 'spreadsheet'
+  | 'archives'
+  | 'data'
+  | 'metadata'
+  | 'media'
+  | 'watchfolders';
 
 const activeToolTitles: Record<ActiveTool, string> = {
   image: 'Instant Image Converter',
-  pdf: 'PDF Split, Merge, Compress & Vector Redaction',
+  pdf: 'PDF Split, Merge, Compress & Watermark',
+  vectorfont: 'Fonts & Vectors (TTF, WOFF2, SVG)',
+  ocrsec: 'On-Device OCR & Document Security',
+  ebooks: 'E-Books & Extended Documents (EPUB, DOCX)',
+  capture: 'Local Capture & HTML to PDF Studio',
   metadata: 'Metadata Stripper',
   data: 'Data & Hashes',
   media: 'Media Studio & Transcoder',
@@ -156,15 +179,15 @@ export const App: React.FC = () => {
 
       {/* Main Container */}
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 xl:px-16 py-6 sm:py-8 space-y-6 sm:space-y-8">
-        {/* Tool Switcher Navigation (Clean multi-row wrap / 2-col mobile grid / spacious widescreen) */}
+        {/* Tool Switcher Navigation (Clean multi-row wrap / spacious widescreen) */}
         <nav
           aria-label="Tool Switcher"
-          className="w-full grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center gap-2 sm:gap-2.5 lg:gap-3 p-1.5 sm:p-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm shadow-lg"
+          className="w-full flex flex-wrap items-center justify-start sm:justify-center gap-1.5 sm:gap-2 lg:gap-2.5 p-1.5 sm:p-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm shadow-lg"
         >
           <button
             type="button"
             onClick={() => setActiveTool('image')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[40px] sm:min-h-[36px] ${
               activeTool === 'image'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -174,12 +197,21 @@ export const App: React.FC = () => {
               <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
               <span className="truncate">Image Converter</span>
             </div>
+            <span
+              className={`hidden min-[420px]:inline text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors shrink-0 ${
+                activeTool === 'image'
+                  ? 'bg-zinc-300 text-zinc-950 font-semibold'
+                  : 'bg-zinc-800 text-zinc-400'
+              }`}
+            >
+              WebP / PNG
+            </span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTool('pdf')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[40px] sm:min-h-[36px] ${
               activeTool === 'pdf'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -187,98 +219,143 @@ export const App: React.FC = () => {
           >
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
               <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span className="truncate">PDF & Vector Redact</span>
-            </div>
-            {/* PRO badge temporarily hidden for clean unified free toolset */}
-            {SHOW_PRO_BADGES && (
-              <span
-                className={`text-[9px] font-mono px-1 py-0.2 rounded transition-colors font-bold shrink-0 ${
-                  activeTool === 'pdf'
-                    ? 'bg-zinc-300 text-zinc-950'
-                    : 'bg-zinc-800 text-zinc-300'
-                }`}
-              >
-                PRO
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTool('metadata')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
-              activeTool === 'metadata'
-                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
-            }`}
-          >
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <ShieldAlert className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
-              <span className="truncate">Metadata Stripper</span>
+              <span className="truncate">PDF Tools</span>
             </div>
             <span
               className={`hidden min-[420px]:inline text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors shrink-0 ${
-                activeTool === 'metadata'
+                activeTool === 'pdf'
                   ? 'bg-zinc-300 text-zinc-950 font-semibold'
                   : 'bg-zinc-800 text-zinc-400'
               }`}
             >
-              GPS / EXIF
+              Split / Merge
             </span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTool('data')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
-              activeTool === 'data'
+            onClick={() => setActiveTool('ocrsec')}
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[40px] sm:min-h-[36px] ${
+              activeTool === 'ocrsec'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
             }`}
           >
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <Code2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400 shrink-0" />
-              <span className="truncate">Data & Hashes</span>
+              <ScanText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+              <span className="truncate">OCR & Security</span>
             </div>
             <span
               className={`hidden min-[420px]:inline text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors shrink-0 ${
-                activeTool === 'data'
+                activeTool === 'ocrsec'
                   ? 'bg-zinc-300 text-zinc-950 font-semibold'
                   : 'bg-zinc-800 text-zinc-400'
               }`}
             >
-              JSON / SHA
+              OCR / AES
             </span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTool('media')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
-              activeTool === 'media'
+            onClick={() => setActiveTool('vectorfont')}
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[40px] sm:min-h-[36px] ${
+              activeTool === 'vectorfont'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
             }`}
           >
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <Film className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 shrink-0" />
-              <span className="truncate">Media Studio</span>
+              <Type className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400 shrink-0" />
+              <span className="truncate">Fonts & Vectors</span>
             </div>
             <span
               className={`hidden min-[420px]:inline text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors shrink-0 ${
-                activeTool === 'media'
+                activeTool === 'vectorfont'
                   ? 'bg-zinc-300 text-zinc-950 font-semibold'
                   : 'bg-zinc-800 text-zinc-400'
               }`}
             >
-              WASM
+              WOFF2 / SVG
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTool('ebooks')}
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[40px] sm:min-h-[36px] ${
+              activeTool === 'ebooks'
+                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400 shrink-0" />
+              <span className="truncate">E-Books & Docs</span>
+            </div>
+            <span
+              className={`hidden min-[420px]:inline text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors shrink-0 ${
+                activeTool === 'ebooks'
+                  ? 'bg-zinc-300 text-zinc-950 font-semibold'
+                  : 'bg-zinc-800 text-zinc-400'
+              }`}
+            >
+              EPUB / DOCX
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTool('capture')}
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[40px] sm:min-h-[36px] ${
+              activeTool === 'capture'
+                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 shrink-0" />
+              <span className="truncate">Capture & Web</span>
+            </div>
+            <span
+              className={`hidden min-[420px]:inline text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors shrink-0 ${
+                activeTool === 'capture'
+                  ? 'bg-zinc-300 text-zinc-950 font-semibold'
+                  : 'bg-zinc-800 text-zinc-400'
+              }`}
+            >
+              Screen / HTML
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTool('spreadsheet')}
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[40px] sm:min-h-[36px] ${
+              activeTool === 'spreadsheet'
+                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+              <span className="truncate">Spreadsheet</span>
+            </div>
+            <span
+              className={`hidden min-[420px]:inline text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors shrink-0 ${
+                activeTool === 'spreadsheet'
+                  ? 'bg-zinc-300 text-zinc-950 font-semibold'
+                  : 'bg-zinc-800 text-zinc-400'
+              }`}
+            >
+              XLSX / CSV
             </span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTool('archives')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[40px] sm:min-h-[36px] ${
               activeTool === 'archives'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -301,25 +378,73 @@ export const App: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => setActiveTool('spreadsheet')}
-            className={`col-span-2 sm:col-span-1 flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
-              activeTool === 'spreadsheet'
+            onClick={() => setActiveTool('data')}
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[40px] sm:min-h-[36px] ${
+              activeTool === 'data'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
             }`}
           >
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
-              <span className="truncate">Spreadsheet</span>
+              <Code2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400 shrink-0" />
+              <span className="truncate">Data & Hashes</span>
             </div>
             <span
               className={`hidden min-[420px]:inline text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors shrink-0 ${
-                activeTool === 'spreadsheet'
+                activeTool === 'data'
                   ? 'bg-zinc-300 text-zinc-950 font-semibold'
                   : 'bg-zinc-800 text-zinc-400'
               }`}
             >
-              XLSX / CSV
+              JSON / SHA
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTool('metadata')}
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[40px] sm:min-h-[36px] ${
+              activeTool === 'metadata'
+                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <ShieldAlert className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+              <span className="truncate">Metadata Stripper</span>
+            </div>
+            <span
+              className={`hidden min-[420px]:inline text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors shrink-0 ${
+                activeTool === 'metadata'
+                  ? 'bg-zinc-300 text-zinc-950 font-semibold'
+                  : 'bg-zinc-800 text-zinc-400'
+              }`}
+            >
+              GPS / EXIF
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTool('media')}
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[40px] sm:min-h-[36px] ${
+              activeTool === 'media'
+                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <Film className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 shrink-0" />
+              <span className="truncate">Media Studio</span>
+            </div>
+            <span
+              className={`hidden min-[420px]:inline text-[9px] font-mono px-1.5 py-0.5 rounded transition-colors shrink-0 ${
+                activeTool === 'media'
+                  ? 'bg-zinc-300 text-zinc-950 font-semibold'
+                  : 'bg-zinc-800 text-zinc-400'
+              }`}
+            >
+              WASM
             </span>
           </button>
 
@@ -328,7 +453,7 @@ export const App: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTool('watchfolders')}
-              className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
+              className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[40px] sm:min-h-[36px] ${
                 activeTool === 'watchfolders'
                   ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -355,6 +480,43 @@ export const App: React.FC = () => {
         <div className="rounded-2xl border border-zinc-800/80 bg-zinc-950/40 p-4 sm:p-6 md:p-8 backdrop-blur-sm shadow-xl w-full">
           {activeTool === 'image' && <ImageConverter />}
           {activeTool === 'pdf' && <PdfTools onOpenLicense={() => setIsLicenseOpen(true)} />}
+          {activeTool === 'ocrsec' && <PdfTools onOpenLicense={() => setIsLicenseOpen(true)} initialTab="ocr" />}
+          {activeTool === 'vectorfont' && (
+            <React.Suspense
+              fallback={
+                <div className="py-20 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="w-8 h-8 rounded-full border-2 border-zinc-700 border-t-emerald-400 animate-spin" />
+                  <p className="text-xs font-mono text-zinc-400">Loading Fonts & Vectors Studio...</p>
+                </div>
+              }
+            >
+              <VectorFontTools />
+            </React.Suspense>
+          )}
+          {activeTool === 'ebooks' && (
+            <React.Suspense
+              fallback={
+                <div className="py-20 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="w-8 h-8 rounded-full border-2 border-zinc-700 border-t-indigo-400 animate-spin" />
+                  <p className="text-xs font-mono text-zinc-400">Loading E-Books & Extended Documents...</p>
+                </div>
+              }
+            >
+              <EbookTools />
+            </React.Suspense>
+          )}
+          {activeTool === 'capture' && (
+            <React.Suspense
+              fallback={
+                <div className="py-20 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="w-8 h-8 rounded-full border-2 border-zinc-700 border-t-purple-400 animate-spin" />
+                  <p className="text-xs font-mono text-zinc-400">Loading Local Webpage & Screen Capture...</p>
+                </div>
+              }
+            >
+              <CaptureTools />
+            </React.Suspense>
+          )}
           {activeTool === 'metadata' && <MetadataScrubber />}
           {activeTool === 'data' && <DataTools />}
           {activeTool === 'watchfolders' && (
