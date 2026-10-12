@@ -59,7 +59,7 @@ export const Header: React.FC<HeaderProps> = ({
               ZeroEgress
             </span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
-              v-3
+              v-3.1
             </span>
           </div>
         </div>
