@@ -680,7 +680,7 @@ export const PdfTools: React.FC<PdfToolsProps> = ({ onOpenLicense }) => {
                         <FileText className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-medium text-zinc-200 truncate max-w-sm sm:max-w-md">
+                        <p className="text-xs font-medium text-zinc-200 truncate max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl">
                           {item.name}
                         </p>
                         <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-mono mt-0.5">

@@ -230,7 +230,7 @@ export const SpreadsheetConverter: React.FC = () => {
               </div>
 
               {/* Scrollable table view */}
-              <div className="w-full max-w-full overflow-x-auto overflow-y-auto max-h-64 rounded-lg border border-zinc-800 bg-zinc-950/80">
+              <div className="w-full max-w-full overflow-x-auto overflow-y-auto max-h-64 lg:max-h-96 xl:max-h-[440px] rounded-lg border border-zinc-800 bg-zinc-950/80">
                 {currentSheetInfo.previewRows.length > 0 ? (
                   <table className="w-full text-left text-[11px] font-mono text-zinc-300 divide-y divide-zinc-800">
                     {/* Header Row */}

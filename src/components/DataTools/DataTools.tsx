@@ -447,7 +447,7 @@ export const DataTools: React.FC = () => {
               </div>
 
               {/* Editor Textarea with Line Numbers */}
-              <div className="relative flex-1 min-h-[380px] max-h-[540px] flex font-mono text-xs overflow-hidden bg-zinc-950/40">
+              <div className="relative flex-1 min-h-[380px] lg:min-h-[480px] max-h-[540px] lg:max-h-[640px] flex font-mono text-xs overflow-hidden bg-zinc-950/40">
                 {/* Gutter */}
                 <div
                   ref={inputLineGutterRef}
@@ -576,7 +576,7 @@ export const DataTools: React.FC = () => {
               </div>
 
               {/* Output Preview Area */}
-              <div className="relative flex-1 min-h-[380px] max-h-[540px] flex font-mono text-xs overflow-hidden bg-zinc-950/60">
+              <div className="relative flex-1 min-h-[380px] lg:min-h-[480px] max-h-[540px] lg:max-h-[640px] flex font-mono text-xs overflow-hidden bg-zinc-950/60">
                 {conversionError ? (
                   <div className="flex-1 p-6 flex flex-col items-center justify-center text-center">
                     <div className="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-3">

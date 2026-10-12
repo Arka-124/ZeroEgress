@@ -149,16 +149,16 @@ export const App: React.FC = () => {
       />
 
       {/* Main Container */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
-        {/* Tool Switcher Navigation (Clean multi-row wrap / 2-col mobile grid) */}
+      <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 xl:px-16 py-6 sm:py-8 space-y-6 sm:space-y-8">
+        {/* Tool Switcher Navigation (Clean multi-row wrap / 2-col mobile grid / spacious widescreen) */}
         <nav
           aria-label="Tool Switcher"
-          className="w-full grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center gap-2 sm:gap-2.5 p-1.5 sm:p-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm shadow-lg"
+          className="w-full grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center gap-2 sm:gap-2.5 lg:gap-3 p-1.5 sm:p-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm shadow-lg"
         >
           <button
             type="button"
             onClick={() => setActiveTool('image')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
               activeTool === 'image'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -173,7 +173,7 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTool('pdf')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
               activeTool === 'pdf'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -200,7 +200,7 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTool('metadata')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
               activeTool === 'metadata'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -224,7 +224,7 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTool('data')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
               activeTool === 'data'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -248,7 +248,7 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTool('media')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
               activeTool === 'media'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -272,7 +272,7 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTool('archives')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
               activeTool === 'archives'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -296,7 +296,7 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTool('spreadsheet')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
               activeTool === 'spreadsheet'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -320,7 +320,7 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTool('watchfolders')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 sm:py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
+            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
               activeTool === 'watchfolders'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -398,7 +398,7 @@ export const App: React.FC = () => {
 
       {/* Utilitarian Footer */}
       <footer className="border-t border-zinc-900 bg-zinc-950/90 py-6 text-xs text-zinc-400 transition-colors">
-        <div className="max-w-6xl w-full mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[11px]">
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 xl:px-16 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[11px]">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-zinc-400 text-center sm:text-left">
             <span className="font-semibold text-zinc-300">ZeroEgress</span>
             <span className="text-zinc-600">·</span>

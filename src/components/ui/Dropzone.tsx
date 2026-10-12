@@ -87,7 +87,7 @@ export const Dropzone: React.FC<DropzoneProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={() => fileInputRef.current?.click()}
-      className={`relative group cursor-pointer border border-dashed rounded-xl p-5 sm:p-8 transition-all duration-200 text-center select-none ${
+      className={`relative group cursor-pointer border border-dashed rounded-xl p-5 sm:p-8 lg:p-10 xl:p-12 transition-all duration-200 text-center select-none w-full ${
         isDragging
           ? 'border-zinc-300 bg-zinc-900/80 scale-[1.005]'
           : 'border-zinc-800 bg-zinc-950/40 hover:border-zinc-700 hover:bg-zinc-900/30'

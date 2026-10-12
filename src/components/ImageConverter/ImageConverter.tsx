@@ -476,7 +476,7 @@ export const ImageConverter: React.FC = () => {
                   </div>
 
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-zinc-200 truncate max-w-xs sm:max-w-md">
+                    <p className="text-xs font-medium text-zinc-200 truncate max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl">
                       {item.file.name}
                     </p>
                     <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-mono mt-0.5">

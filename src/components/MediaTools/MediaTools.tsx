@@ -368,7 +368,7 @@ export const MediaTools: React.FC = () => {
           {/* Interactive Player Section */}
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 md:p-6 space-y-4">
             {mediaType === 'video' ? (
-              <div className="relative rounded-xl overflow-hidden bg-black aspect-video max-h-[420px] flex items-center justify-center mx-auto border border-zinc-900 shadow-2xl">
+              <div className="relative rounded-xl overflow-hidden bg-black aspect-video max-h-[460px] lg:max-h-[560px] xl:max-h-[640px] flex items-center justify-center mx-auto border border-zinc-900 shadow-2xl w-full">
                 <video
                   ref={videoRef}
                   src={mediaUrl}
@@ -389,7 +389,7 @@ export const MediaTools: React.FC = () => {
                   controls
                   onLoadedMetadata={handleLoadedMetadata}
                   onTimeUpdate={handleTimeUpdate}
-                  className="w-full max-w-md"
+                  className="w-full max-w-xl"
                 />
               </div>
             )}
@@ -670,9 +670,9 @@ export const MediaTools: React.FC = () => {
                   <div className="pt-3 border-t border-emerald-500/20">
                     <p className="text-xs font-mono text-zinc-400 mb-2">Preview Transcoded File:</p>
                     {isTargetAudioOnly ? (
-                      <audio src={resultUrl} controls className="w-full max-w-lg" />
+                      <audio src={resultUrl} controls className="w-full max-w-xl" />
                     ) : (
-                      <video src={resultUrl} controls className="w-full max-w-lg rounded-lg border border-zinc-800" />
+                      <video src={resultUrl} controls className="w-full max-w-3xl rounded-lg border border-zinc-800" />
                     )}
                   </div>
                 </div>
