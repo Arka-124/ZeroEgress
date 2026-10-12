@@ -24,6 +24,9 @@ import { LicenseModal } from './components/License/LicenseModal';
 import { ArchitectureModal } from './components/Architecture/ArchitectureModal';
 import { SHOW_PRO_BADGES, SHOW_LICENSE_UI } from './engine/license/licenseVerifier';
 
+// Reserved for native desktop shell release; hidden from web navigation bar
+const SHOW_WATCH_FOLDERS = false;
+
 // Lazy-load heavier utilities to keep initial bundle small
 const MediaTools = React.lazy(() => import('./components/MediaTools/MediaTools'));
 const ArchiveTools = React.lazy(() => import('./components/ArchiveTools/ArchiveTools'));
@@ -299,7 +302,7 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTool('spreadsheet')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
+            className={`col-span-2 sm:col-span-1 flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
               activeTool === 'spreadsheet'
                 ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -320,29 +323,32 @@ export const App: React.FC = () => {
             </span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTool('watchfolders')}
-            className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
-              activeTool === 'watchfolders'
-                ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
-            }`}
-          >
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <FolderSync className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
-              <span className="truncate">Watch Folders</span>
-            </div>
-            <span
-              className={`hidden min-[420px]:inline text-[9px] font-mono px-1.5 py-0.2 rounded transition-colors font-bold shrink-0 ${
+          {/* Watch Folders tab hidden from web navigation bar (reserved for native desktop app release) */}
+          {SHOW_WATCH_FOLDERS && (
+            <button
+              type="button"
+              onClick={() => setActiveTool('watchfolders')}
+              className={`flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 px-2.5 sm:px-3 lg:px-3.5 xl:px-4 py-2 sm:py-1.5 lg:py-2 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer min-h-[42px] sm:min-h-[36px] ${
                 activeTool === 'watchfolders'
-                  ? 'bg-emerald-950 text-emerald-300'
-                  : 'bg-zinc-800 text-emerald-400'
+                  ? 'bg-zinc-100 text-zinc-950 shadow-sm font-semibold'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
               }`}
             >
-              DAEMON
-            </span>
-          </button>
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <FolderSync className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0" />
+                <span className="truncate">Watch Folders</span>
+              </div>
+              <span
+                className={`hidden min-[420px]:inline text-[9px] font-mono px-1.5 py-0.2 rounded transition-colors font-bold shrink-0 ${
+                  activeTool === 'watchfolders'
+                    ? 'bg-emerald-950 text-emerald-300'
+                    : 'bg-zinc-800 text-emerald-400'
+                }`}
+              >
+                DAEMON
+              </span>
+            </button>
+          )}
         </nav>
 
         {/* Active Tool View */}
